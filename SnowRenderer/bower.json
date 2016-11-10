@@ -1,0 +1,24 @@
+{
+  "name": "Special Snowflake",
+  "homepage": "",
+  "authors": [
+    "Kevin <kevin@henzer.ch>"
+  ],
+  "description": "",
+  "main": "index.html",
+  "license": "GPLv3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "threejs#*",
+    "dat.gui": "*"
+  },
+  "devDependencies": {
+    "livereload-js": "^2.2.1"
+  }
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" id="index">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="description" content="">
+    <link rel="stylesheet" href="dist/specialSnowflake.css" />
+
+    <title>Special Snowflake</title>
+  </head>
+  <body>
+		<script type="x-shader/x-vertex" id="step07_vs">
+			uniform float radiusX;
+			uniform float radiusZ;
+			uniform float size;
+			uniform float scale;
+			uniform float height;
+			uniform float elapsedTime;
+			uniform float speedH;
+			uniform float speedV;
+
+			void main() {
+				vec3 pos = position;
+				pos.x += cos((elapsedTime + position.z) * 0.25 * speedH) * radiusX;
+				pos.y = mod(pos.y - elapsedTime * speedV, height);
+				pos.z += sin((elapsedTime + position.x) * 0.25 * speedH) * radiusZ;
+
+				vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );
+
+				gl_PointSize = size * ( scale / length( mvPosition.xyz ) );
+
+				gl_Position = projectionMatrix * mvPosition;
+			}
+		</script>
+		
+		<script type="x-shader/x-fragment" id="step09_fs">
+			uniform vec3 color;
+			uniform float opacity;
+			uniform sampler2D texture;
+
+			void main() {
+				vec4 texColor = texture2D( texture, gl_PointCoord );
+				gl_FragColor = texColor * vec4( color, opacity );
+			}
+		</script>  
+    <script src="dist/specialSnowflake.js"></script>   
+    <script src="http://localhost:35729/livereload.js"></script>
+  </body> 
+</html>
+
+

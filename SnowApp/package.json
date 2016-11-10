@@ -1,0 +1,22 @@
+{
+  "name": "SpecialSnowflake",
+  "version": "1.0.0",
+  "description": "Special Snowflake",
+  "dependencies": {},
+  "devDependencies": {
+    "bower": "^1.7.9",
+    "grunt": "^1.0.1",
+    "grunt-bower-concat": "^1.0.0",
+    "grunt-cli": "^1.2.0",
+    "grunt-concat-css": "^0.3.1",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-connect": "^1.0.2",
+    "grunt-contrib-cssmin": "^1.0.2",
+    "grunt-contrib-htmlmin": "^2.0.0",
+    "grunt-contrib-uglify": "^2.0.0",
+    "grunt-contrib-watch": "^1.0.0"
+  },
+  "author": "Kevin Henzer",
+  "license": "GPL-3.0",
+  "homepage": "http://vulliens17.ch"
+}
