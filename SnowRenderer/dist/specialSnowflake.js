@@ -1,4 +1,4 @@
-/*! SpecialSnowflake - v1.0.0 - 2016-11-12
+/*! SpecialSnowflake - v1.0.0 - 2016-11-14
 * http://vulliens17.ch
 * Copyright (c) 2016 ; Licensed GPL-3.0 */
 /** @namespace */
@@ -56177,6 +56177,8 @@ window.onload = function() {
   var floodTimeoutAdd = 300;
   var floodTimeoutHighlight = 300;
 
+  var wsHost = "lausanne.pimp-my-wall.ch"
+
   var container, clock;
   var camera, scene, renderer, particles, geometry;
   var windowHalfX = window.innerWidth / 2;
@@ -56259,23 +56261,28 @@ window.onload = function() {
     return {points1:points1,points2:points2};
   };  
 
-  var addNewSnowflake = function(userId,JSONpoints,floodProtect)
+  var addNewSnowflakeToList = function(userId,flakeId,points,floodProtect)
   {
     var now = new Date();
 
     if(floodProtect && (now.getTime()-lastAdd.getTime() < floodTimeoutAdd))
       return;
 
-    lastAdd = now;
+    if(flakeId !== false && availableFlakes.find(function(e){return e.flakeId===flakeId;}) != undefined)
+      return;  
 
-    var points = JSON.parse(JSONpoints);
+    flakeId = guid();
+
+    // var points = JSON.parse(JSONpoints);
 
     // console.log(points);
 
     if(points.length < 2 || points.length > 5)
-      return;
+      return; 
 
-    for(var i=0;i < points.length;i++)
+    lastAdd = now;    
+
+    for(var i=0;i < points.length; i++)
     {
       if(points[i].x < 0)
         points[i].x = 0;
@@ -56292,13 +56299,13 @@ window.onload = function() {
 
     var pointsArrays = generatePointList(points);
 
-    var flakeId = guid();
+    console.log("Adding snowflake");
 
-    var canvas = $("<canvas>").attr('width',textureResolution).attr('height',textureResolution).attr("data-source",JSONpoints);
+    var canvas = $("<canvas>").attr('width',textureResolution).attr('height',textureResolution);
 
-    canvas.click(function(){
-      console.log(canvas.attr("data-source"));
-    });
+    // canvas.click(function(){
+      // console.log(canvas.attr("data-source"));
+    // });
 
     // $("body").append(canvas);
     var ctx = canvas[0].getContext('2d');
@@ -56339,7 +56346,7 @@ window.onload = function() {
     availableFlakes.push({
       flakeId:flakeId,
       userId:userId,
-      textureJSON:JSON.stringify(points1),
+      texturePoints:points,
       texture: new THREE.Texture(canvas[0])
     });
 
@@ -56347,7 +56354,6 @@ window.onload = function() {
 
     delete canvas;
     canvas = null;
-
   }
 
   var highlightSnowflake = function(userId,hue,floodProtect)
@@ -56358,6 +56364,12 @@ window.onload = function() {
       return;
 
     lastHighLight = now;
+
+    for(i=highLightList.length-1;i >= 0;i--)
+    {
+      if(highLightList[i].userId == userId)
+        highLightList.splice(i,1);
+    }
 
     console.log("Highlighting "+userId);
 
@@ -56399,8 +56411,7 @@ window.onload = function() {
     render();
   }
 
-  function render()
-  {
+  function render() {
     var toRemove = [];
     var toRemoveHighLight = [];
 
@@ -56516,7 +56527,7 @@ window.onload = function() {
       var element = highLightList.find(function(element){
         if(element.userId == toRemoveHighLight[i])
           return element;
-      });
+      }); 
 
       highLightList.splice(highLightList.indexOf(element),1);
     }
@@ -56524,8 +56535,66 @@ window.onload = function() {
     renderer.render( scene, camera );
   }
 
-  window.setInterval(function(){
+  function saveState(connection) {
+    
+    filteredArray = [];
 
+    for(var i=0;i<availableFlakes.length;i++)
+    {
+      filteredArray.push(
+        {
+          flakeId:availableFlakes[i].flakeId,
+          userId:availableFlakes[i].userId,
+          texturePoints:availableFlakes[i].texturePoints
+        });
+    }
+
+    // console.log("Save state:",filteredArray);
+
+    connection.sendMessage({
+      type: 'saveState',
+      data: {flakes:filteredArray}
+    });
+
+  }
+
+  function onOpen(connection) {
+    connection.sendMessage({
+      type: 'hello',
+      data: {
+        game: 'special-snowflake'
+      }
+    });
+  }  
+
+  function onMessage(connection, parsedMessage) {
+    switch (parsedMessage.type) {
+      case 'newSnowFlake':
+        // console.log(parsedMessage);
+        addNewSnowflakeToList(parsedMessage.data.userId,false,parsedMessage.data.points,true);
+        saveState(connection);        
+        break;
+      case 'showMyFlakes':
+        highlightSnowflake(parsedMessage.data.userId,randomIntFromInterval(0,254),true);
+        // saveState(connection);        
+        break;
+      case 'hello':
+        // console.log("Restore state:",parsedMessage);
+
+        for(var i=0;i<parsedMessage.data.state.flakes.length;i++)
+        {
+          var item = parsedMessage.data.state.flakes[i];
+
+          addNewSnowflakeToList(item.userId,item.flakeId,item.texturePoints,false);          
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  var addAvailableFlakeToScene = function()
+  {
     if(availableFlakes.length == 0)
       return;
 
@@ -56579,117 +56648,387 @@ window.onload = function() {
 
     scene.add(particle);
 
-  },30);
+  }
+
+  window.setInterval(function(){
+
+    for(var i=0;i<10;i++)
+      addAvailableFlakeToScene()
+ 
+  },300);
 
   init();
   animate();      
 
   var flakes = [];
 
-  flakes.push('[{"x":0.5,"y":0},{"x":0.36,"y":-0.17},{"x":0.21,"y":-0.15},{"x":0.09,"y":-0.08},{"x":0.35,"y":-0.17}]');
-  flakes.push('[{"x":0.39,"y":-0.05},{"x":0.13,"y":-0.23},{"x":0.45,"y":-0.01},{"x":0.47,"y":-0.03},{"x":0.09,"y":-0.03}]');
-  flakes.push('[{"x":0.38,"y":-0.16},{"x":0.43,"y":-0.1},{"x":0.32,"y":-0.05},{"x":0.13,"y":-0.1},{"x":0.23,"y":-0.11}]');
-  flakes.push('[{"x":0.21,"y":-0.18},{"x":0.42,"y":-0.03},{"x":0.02,"y":-0.05},{"x":0.31,"y":-0.03},{"x":0,"y":-0.21}]');
-  flakes.push('[{"x":0.17,"y":-0.01},{"x":0.11,"y":-0.07},{"x":0.14,"y":-0.2},{"x":0.29,"y":-0.17},{"x":0.03,"y":-0.16}]');
-  flakes.push('[{"x":0.01,"y":-0.02},{"x":0.01,"y":-0.15},{"x":0.18,"y":-0.02},{"x":0.13,"y":-0.06},{"x":0,"y":-0.08}]');
-  flakes.push('[{"x":0.12,"y":-0.24},{"x":0.32,"y":-0.03},{"x":0.37,"y":-0.01},{"x":0.2,"y":0},{"x":0.1,"y":-0.18}]');
-  flakes.push('[{"x":0.27,"y":0},{"x":0.22,"y":0},{"x":0.33,"y":-0.07},{"x":0.18,"y":-0.1},{"x":0.33,"y":-0.07}]');
-  flakes.push('[{"x":0.48,"y":0},{"x":0.35,"y":-0.01},{"x":0.04,"y":-0.06},{"x":0.49,"y":-0.01},{"x":0.14,"y":-0.06}]');
-  flakes.push('[{"x":0.13,"y":-0.16},{"x":0.29,"y":-0.07},{"x":0.39,"y":-0.08},{"x":0.13,"y":-0.17},{"x":0.46,"y":-0.05}]');
-  flakes.push('[{"x":0.49,"y":-0.02},{"x":0.18,"y":-0.06},{"x":0.42,"y":0},{"x":0.5,"y":0},{"x":0.09,"y":-0.13}]');
-  flakes.push('[{"x":0.43,"y":0},{"x":0.49,"y":-0.03},{"x":0.12,"y":-0.05},{"x":0.31,"y":-0.12},{"x":0.24,"y":-0.1}]');
-  flakes.push('[{"x":0.15,"y":-0.22},{"x":0.05,"y":-0.04},{"x":0.5,"y":0},{"x":0.38,"y":-0.12},{"x":0.5,"y":0}]');
-  flakes.push('[{"x":0.17,"y":-0.11},{"x":0.34,"y":-0.11},{"x":0.46,"y":0},{"x":0.1,"y":-0.02},{"x":0.05,"y":-0.04}]');
-  flakes.push('[{"x":0.42,"y":-0.13},{"x":0.5,"y":0},{"x":0.34,"y":-0.15},{"x":0.49,"y":-0.03},{"x":0.08,"y":-0.05}]');
-  flakes.push('[{"x":0.48,"y":-0.02},{"x":0.06,"y":-0.14},{"x":0.03,"y":-0.17},{"x":0.02,"y":-0.23},{"x":0.04,"y":-0.04}]');
-  flakes.push('[{"x":0.35,"y":-0.16},{"x":0.12,"y":-0.21},{"x":0.07,"y":-0.21},{"x":0.34,"y":-0.03},{"x":0.16,"y":-0.12}]');
-  flakes.push('[{"x":0.06,"y":-0.23},{"x":0.11,"y":-0.07},{"x":0.31,"y":-0.02},{"x":0.41,"y":-0.11},{"x":0.15,"y":-0.07}]');
-  flakes.push('[{"x":0.44,"y":0},{"x":0.1,"y":-0.21},{"x":0.33,"y":-0.15},{"x":0.06,"y":-0.07},{"x":0.2,"y":-0.1}]');
-  flakes.push('[{"x":0.18,"y":-0.2},{"x":0.43,"y":-0.12},{"x":0.34,"y":-0.07},{"x":0.19,"y":0},{"x":0.15,"y":-0.01}]');
-  flakes.push('[{"x":0.2,"y":-0.11},{"x":0.18,"y":-0.07},{"x":0.46,"y":-0.04},{"x":0.04,"y":-0.23},{"x":0.02,"y":-0.18}]');
-  flakes.push('[{"x":0.38,"y":-0.15},{"x":0.46,"y":-0.07},{"x":0.21,"y":-0.14},{"x":0.28,"y":-0.1},{"x":0.11,"y":-0.06}]');
-  flakes.push('[{"x":0.07,"y":-0.01},{"x":0.03,"y":-0.02},{"x":0.47,"y":-0.03},{"x":0.25,"y":-0.17},{"x":0.24,"y":-0.15}]');
-  flakes.push('[{"x":0.49,"y":0},{"x":0.27,"y":-0.1},{"x":0.02,"y":-0.01},{"x":0.18,"y":-0.06},{"x":0.14,"y":-0.2}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.1,"y":-0.04},{"x":0.14,"y":-0.01},{"x":0.48,"y":-0.02},{"x":0.16,"y":-0.15}]');
-  flakes.push('[{"x":0.03,"y":-0.01},{"x":0.29,"y":-0.06},{"x":0.12,"y":-0.04},{"x":0.35,"y":-0.17},{"x":0.24,"y":-0.1}]');
-  flakes.push('[{"x":0.02,"y":-0.16},{"x":0.19,"y":-0.03},{"x":0.36,"y":-0.1},{"x":0.06,"y":-0.01},{"x":0.13,"y":-0.14}]');
-  flakes.push('[{"x":0.09,"y":-0.21},{"x":0.49,"y":0},{"x":0,"y":-0.09},{"x":0.16,"y":-0.19},{"x":0.14,"y":-0.17}]');
-  flakes.push('[{"x":0.22,"y":-0.08},{"x":0.46,"y":-0.07},{"x":0.39,"y":-0.14},{"x":0,"y":-0.03},{"x":0.19,"y":-0.16}]');
-  flakes.push('[{"x":0.42,"y":-0.01},{"x":0.46,"y":-0.08},{"x":0.27,"y":-0.15},{"x":0.06,"y":-0.01},{"x":0.23,"y":-0.09}]');
-  flakes.push('[{"x":0,"y":0},{"x":0.23,"y":-0.16},{"x":0.49,"y":0},{"x":0.43,"y":0},{"x":0.15,"y":-0.18}]');
-  flakes.push('[{"x":0.29,"y":-0.12},{"x":0.5,"y":0},{"x":0.08,"y":-0.23},{"x":0.38,"y":-0.05},{"x":0.03,"y":0}]');
-  flakes.push('[{"x":0.05,"y":-0.1},{"x":0.24,"y":-0.13},{"x":0.03,"y":-0.04},{"x":0.02,"y":-0.24},{"x":0.42,"y":-0.03}]');
-  flakes.push('[{"x":0,"y":-0.08},{"x":0.17,"y":-0.18},{"x":0.43,"y":-0.02},{"x":0.25,"y":-0.18},{"x":0.09,"y":-0.19}]');
-  flakes.push('[{"x":0.24,"y":-0.08},{"x":0.02,"y":-0.14},{"x":0.37,"y":-0.14},{"x":0.44,"y":-0.06},{"x":0.47,"y":0}]');
-  flakes.push('[{"x":0.09,"y":-0.02},{"x":0.06,"y":-0.05},{"x":0.4,"y":-0.12},{"x":0.21,"y":-0.18},{"x":0.06,"y":-0.1}]');
-  flakes.push('[{"x":0.43,"y":-0.04},{"x":0.19,"y":-0.08},{"x":0.05,"y":-0.07},{"x":0.06,"y":-0.14},{"x":0.06,"y":-0.05}]');
-  flakes.push('[{"x":0.47,"y":-0.01},{"x":0.01,"y":-0.1},{"x":0.1,"y":-0.08},{"x":0.09,"y":-0.18},{"x":0.17,"y":-0.1}]');
-  flakes.push('[{"x":0.07,"y":-0.24},{"x":0.45,"y":-0.08},{"x":0.47,"y":-0.07},{"x":0.45,"y":-0.02},{"x":0.4,"y":-0.01}]');
-  flakes.push('[{"x":0.22,"y":-0.11},{"x":0.43,"y":-0.05},{"x":0.2,"y":-0.18},{"x":0.02,"y":-0.09},{"x":0.24,"y":-0.04}]');
-  flakes.push('[{"x":0.37,"y":-0.05},{"x":0.09,"y":-0.06},{"x":0.3,"y":-0.07},{"x":0.08,"y":-0.02},{"x":0.07,"y":0}]');
-  flakes.push('[{"x":0.12,"y":-0.04},{"x":0.13,"y":-0.12},{"x":0.05,"y":-0.11},{"x":0.16,"y":-0.01},{"x":0.12,"y":-0.09}]');
-  flakes.push('[{"x":0.37,"y":-0.06},{"x":0.12,"y":-0.01},{"x":0.18,"y":-0.14},{"x":0.12,"y":0},{"x":0.06,"y":-0.01}]');
-  flakes.push('[{"x":0.12,"y":-0.19},{"x":0.04,"y":-0.15},{"x":0.17,"y":-0.2},{"x":0.13,"y":-0.09},{"x":0.18,"y":-0.13}]');
-  flakes.push('[{"x":0.08,"y":-0.23},{"x":0.24,"y":-0.05},{"x":0.21,"y":-0.2},{"x":0.14,"y":-0.1},{"x":0.28,"y":-0.05}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.31,"y":-0.08},{"x":0.4,"y":-0.08},{"x":0.48,"y":-0.02},{"x":0.43,"y":-0.01}]');
-  flakes.push('[{"x":0.38,"y":0},{"x":0.21,"y":-0.14},{"x":0.35,"y":-0.09},{"x":0.4,"y":-0.1},{"x":0.06,"y":-0.17}]');
-  flakes.push('[{"x":0.45,"y":-0.01},{"x":0.07,"y":-0.23},{"x":0.12,"y":-0.12},{"x":0.03,"y":-0.01},{"x":0.02,"y":-0.21}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.37,"y":-0.05},{"x":0.11,"y":-0.02},{"x":0.01,"y":-0.23},{"x":0.22,"y":-0.05}]');
-  flakes.push('[{"x":0.02,"y":-0.03},{"x":0.27,"y":-0.21},{"x":0.29,"y":-0.1},{"x":0.3,"y":-0.11},{"x":0.03,"y":-0.07}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.19,"y":-0.02},{"x":0.28,"y":-0.02},{"x":0.14,"y":-0.01},{"x":0.05,"y":-0.17}]');
-  flakes.push('[{"x":0.08,"y":-0.02},{"x":0.19,"y":-0.07},{"x":0.17,"y":-0.13},{"x":0.31,"y":-0.14},{"x":0.03,"y":-0.01}]');
-  flakes.push('[{"x":0.13,"y":-0.21},{"x":0.45,"y":-0.1},{"x":0.48,"y":-0.06},{"x":0.44,"y":-0.03},{"x":0.06,"y":-0.06}]');
-  flakes.push('[{"x":0.1,"y":-0.24},{"x":0.48,"y":-0.05},{"x":0.14,"y":-0.22},{"x":0.41,"y":-0.09},{"x":0.28,"y":0}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.02,"y":-0.05},{"x":0.31,"y":-0.13},{"x":0.02,"y":-0.12},{"x":0.02,"y":-0.09}]');
-  flakes.push('[{"x":0.42,"y":-0.12},{"x":0.48,"y":-0.03},{"x":0.31,"y":-0.19},{"x":0.03,"y":-0.11},{"x":0.19,"y":-0.17}]');
-  flakes.push('[{"x":0.17,"y":-0.01},{"x":0.5,"y":0},{"x":0.21,"y":-0.08},{"x":0.18,"y":-0.06},{"x":0.07,"y":-0.17}]');
-  flakes.push('[{"x":0.42,"y":-0.06},{"x":0.29,"y":-0.07},{"x":0.37,"y":-0.11},{"x":0.48,"y":-0.02},{"x":0.08,"y":-0.04}]');
-  flakes.push('[{"x":0.43,"y":-0.12},{"x":0.07,"y":-0.18},{"x":0.29,"y":-0.14},{"x":0.27,"y":-0.19},{"x":0.07,"y":-0.1}]');
-  flakes.push('[{"x":0.18,"y":-0.06},{"x":0.14,"y":-0.05},{"x":0.1,"y":-0.05},{"x":0.12,"y":-0.15},{"x":0.1,"y":-0.09}]');
-  flakes.push('[{"x":0.11,"y":-0.07},{"x":0.38,"y":0},{"x":0.46,"y":-0.03},{"x":0.14,"y":-0.08},{"x":0.2,"y":-0.06}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.14,"y":-0.06},{"x":0.43,"y":-0.09},{"x":0.13,"y":-0.02},{"x":0.1,"y":-0.06}]');
-  flakes.push('[{"x":0.5,"y":0},{"x":0.07,"y":-0.03},{"x":0.08,"y":0},{"x":0.15,"y":-0.17},{"x":0.18,"y":-0.07}]');
-  flakes.push('[{"x":0.42,"y":-0.03},{"x":0.28,"y":-0.03},{"x":0.27,"y":-0.03},{"x":0.44,"y":-0.11},{"x":0.1,"y":0}]');
-  flakes.push('[{"x":0.29,"y":-0.01},{"x":0.42,"y":-0.07},{"x":0.41,"y":-0.13},{"x":0.03,"y":-0.01},{"x":0.22,"y":-0.13}]');
-  flakes.push('[{"x":0.14,"y":0},{"x":0.04,"y":-0.18},{"x":0.05,"y":-0.13},{"x":0.1,"y":-0.02},{"x":0.31,"y":0}]');
-  flakes.push('[{"x":0.05,"y":-0.16},{"x":0.37,"y":-0.11},{"x":0.48,"y":-0.01},{"x":0.3,"y":-0.19},{"x":0.08,"y":0}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.36,"y":-0.17},{"x":0.21,"y":-0.15},{"x":0.09,"y":-0.08},{"x":0.35,"y":-0.17}]');
+  // flakes.push('[{"x":0.39,"y":-0.05},{"x":0.13,"y":-0.23},{"x":0.45,"y":-0.01},{"x":0.47,"y":-0.03},{"x":0.09,"y":-0.03}]');
+  // flakes.push('[{"x":0.38,"y":-0.16},{"x":0.43,"y":-0.1},{"x":0.32,"y":-0.05},{"x":0.13,"y":-0.1},{"x":0.23,"y":-0.11}]');
+  // flakes.push('[{"x":0.21,"y":-0.18},{"x":0.42,"y":-0.03},{"x":0.02,"y":-0.05},{"x":0.31,"y":-0.03},{"x":0,"y":-0.21}]');
+  // flakes.push('[{"x":0.17,"y":-0.01},{"x":0.11,"y":-0.07},{"x":0.14,"y":-0.2},{"x":0.29,"y":-0.17},{"x":0.03,"y":-0.16}]');
+  // flakes.push('[{"x":0.01,"y":-0.02},{"x":0.01,"y":-0.15},{"x":0.18,"y":-0.02},{"x":0.13,"y":-0.06},{"x":0,"y":-0.08}]');
+  // flakes.push('[{"x":0.12,"y":-0.24},{"x":0.32,"y":-0.03},{"x":0.37,"y":-0.01},{"x":0.2,"y":0},{"x":0.1,"y":-0.18}]');
+  // flakes.push('[{"x":0.27,"y":0},{"x":0.22,"y":0},{"x":0.33,"y":-0.07},{"x":0.18,"y":-0.1},{"x":0.33,"y":-0.07}]');
+  // flakes.push('[{"x":0.48,"y":0},{"x":0.35,"y":-0.01},{"x":0.04,"y":-0.06},{"x":0.49,"y":-0.01},{"x":0.14,"y":-0.06}]');
+  // flakes.push('[{"x":0.13,"y":-0.16},{"x":0.29,"y":-0.07},{"x":0.39,"y":-0.08},{"x":0.13,"y":-0.17},{"x":0.46,"y":-0.05}]');
+  // flakes.push('[{"x":0.49,"y":-0.02},{"x":0.18,"y":-0.06},{"x":0.42,"y":0},{"x":0.5,"y":0},{"x":0.09,"y":-0.13}]');
+  // flakes.push('[{"x":0.43,"y":0},{"x":0.49,"y":-0.03},{"x":0.12,"y":-0.05},{"x":0.31,"y":-0.12},{"x":0.24,"y":-0.1}]');
+  // flakes.push('[{"x":0.15,"y":-0.22},{"x":0.05,"y":-0.04},{"x":0.5,"y":0},{"x":0.38,"y":-0.12},{"x":0.5,"y":0}]');
+  // flakes.push('[{"x":0.17,"y":-0.11},{"x":0.34,"y":-0.11},{"x":0.46,"y":0},{"x":0.1,"y":-0.02},{"x":0.05,"y":-0.04}]');
+  // flakes.push('[{"x":0.42,"y":-0.13},{"x":0.5,"y":0},{"x":0.34,"y":-0.15},{"x":0.49,"y":-0.03},{"x":0.08,"y":-0.05}]');
+  // flakes.push('[{"x":0.48,"y":-0.02},{"x":0.06,"y":-0.14},{"x":0.03,"y":-0.17},{"x":0.02,"y":-0.23},{"x":0.04,"y":-0.04}]');
+  // flakes.push('[{"x":0.35,"y":-0.16},{"x":0.12,"y":-0.21},{"x":0.07,"y":-0.21},{"x":0.34,"y":-0.03},{"x":0.16,"y":-0.12}]');
+  // flakes.push('[{"x":0.06,"y":-0.23},{"x":0.11,"y":-0.07},{"x":0.31,"y":-0.02},{"x":0.41,"y":-0.11},{"x":0.15,"y":-0.07}]');
+  // flakes.push('[{"x":0.44,"y":0},{"x":0.1,"y":-0.21},{"x":0.33,"y":-0.15},{"x":0.06,"y":-0.07},{"x":0.2,"y":-0.1}]');
+  // flakes.push('[{"x":0.18,"y":-0.2},{"x":0.43,"y":-0.12},{"x":0.34,"y":-0.07},{"x":0.19,"y":0},{"x":0.15,"y":-0.01}]');
+  // flakes.push('[{"x":0.2,"y":-0.11},{"x":0.18,"y":-0.07},{"x":0.46,"y":-0.04},{"x":0.04,"y":-0.23},{"x":0.02,"y":-0.18}]');
+  // flakes.push('[{"x":0.38,"y":-0.15},{"x":0.46,"y":-0.07},{"x":0.21,"y":-0.14},{"x":0.28,"y":-0.1},{"x":0.11,"y":-0.06}]');
+  // flakes.push('[{"x":0.07,"y":-0.01},{"x":0.03,"y":-0.02},{"x":0.47,"y":-0.03},{"x":0.25,"y":-0.17},{"x":0.24,"y":-0.15}]');
+  // flakes.push('[{"x":0.49,"y":0},{"x":0.27,"y":-0.1},{"x":0.02,"y":-0.01},{"x":0.18,"y":-0.06},{"x":0.14,"y":-0.2}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.1,"y":-0.04},{"x":0.14,"y":-0.01},{"x":0.48,"y":-0.02},{"x":0.16,"y":-0.15}]');
+  // flakes.push('[{"x":0.03,"y":-0.01},{"x":0.29,"y":-0.06},{"x":0.12,"y":-0.04},{"x":0.35,"y":-0.17},{"x":0.24,"y":-0.1}]');
+  // flakes.push('[{"x":0.02,"y":-0.16},{"x":0.19,"y":-0.03},{"x":0.36,"y":-0.1},{"x":0.06,"y":-0.01},{"x":0.13,"y":-0.14}]');
+  // flakes.push('[{"x":0.09,"y":-0.21},{"x":0.49,"y":0},{"x":0,"y":-0.09},{"x":0.16,"y":-0.19},{"x":0.14,"y":-0.17}]');
+  // flakes.push('[{"x":0.22,"y":-0.08},{"x":0.46,"y":-0.07},{"x":0.39,"y":-0.14},{"x":0,"y":-0.03},{"x":0.19,"y":-0.16}]');
+  // flakes.push('[{"x":0.42,"y":-0.01},{"x":0.46,"y":-0.08},{"x":0.27,"y":-0.15},{"x":0.06,"y":-0.01},{"x":0.23,"y":-0.09}]');
+  // flakes.push('[{"x":0,"y":0},{"x":0.23,"y":-0.16},{"x":0.49,"y":0},{"x":0.43,"y":0},{"x":0.15,"y":-0.18}]');
+  // flakes.push('[{"x":0.29,"y":-0.12},{"x":0.5,"y":0},{"x":0.08,"y":-0.23},{"x":0.38,"y":-0.05},{"x":0.03,"y":0}]');
+  // flakes.push('[{"x":0.05,"y":-0.1},{"x":0.24,"y":-0.13},{"x":0.03,"y":-0.04},{"x":0.02,"y":-0.24},{"x":0.42,"y":-0.03}]');
+  // flakes.push('[{"x":0,"y":-0.08},{"x":0.17,"y":-0.18},{"x":0.43,"y":-0.02},{"x":0.25,"y":-0.18},{"x":0.09,"y":-0.19}]');
+  // flakes.push('[{"x":0.24,"y":-0.08},{"x":0.02,"y":-0.14},{"x":0.37,"y":-0.14},{"x":0.44,"y":-0.06},{"x":0.47,"y":0}]');
+  // flakes.push('[{"x":0.09,"y":-0.02},{"x":0.06,"y":-0.05},{"x":0.4,"y":-0.12},{"x":0.21,"y":-0.18},{"x":0.06,"y":-0.1}]');
+  // flakes.push('[{"x":0.43,"y":-0.04},{"x":0.19,"y":-0.08},{"x":0.05,"y":-0.07},{"x":0.06,"y":-0.14},{"x":0.06,"y":-0.05}]');
+  // flakes.push('[{"x":0.47,"y":-0.01},{"x":0.01,"y":-0.1},{"x":0.1,"y":-0.08},{"x":0.09,"y":-0.18},{"x":0.17,"y":-0.1}]');
+  // flakes.push('[{"x":0.07,"y":-0.24},{"x":0.45,"y":-0.08},{"x":0.47,"y":-0.07},{"x":0.45,"y":-0.02},{"x":0.4,"y":-0.01}]');
+  // flakes.push('[{"x":0.22,"y":-0.11},{"x":0.43,"y":-0.05},{"x":0.2,"y":-0.18},{"x":0.02,"y":-0.09},{"x":0.24,"y":-0.04}]');
+  // flakes.push('[{"x":0.37,"y":-0.05},{"x":0.09,"y":-0.06},{"x":0.3,"y":-0.07},{"x":0.08,"y":-0.02},{"x":0.07,"y":0}]');
+  // flakes.push('[{"x":0.12,"y":-0.04},{"x":0.13,"y":-0.12},{"x":0.05,"y":-0.11},{"x":0.16,"y":-0.01},{"x":0.12,"y":-0.09}]');
+  // flakes.push('[{"x":0.37,"y":-0.06},{"x":0.12,"y":-0.01},{"x":0.18,"y":-0.14},{"x":0.12,"y":0},{"x":0.06,"y":-0.01}]');
+  // flakes.push('[{"x":0.12,"y":-0.19},{"x":0.04,"y":-0.15},{"x":0.17,"y":-0.2},{"x":0.13,"y":-0.09},{"x":0.18,"y":-0.13}]');
+  // flakes.push('[{"x":0.08,"y":-0.23},{"x":0.24,"y":-0.05},{"x":0.21,"y":-0.2},{"x":0.14,"y":-0.1},{"x":0.28,"y":-0.05}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.31,"y":-0.08},{"x":0.4,"y":-0.08},{"x":0.48,"y":-0.02},{"x":0.43,"y":-0.01}]');
+  // flakes.push('[{"x":0.38,"y":0},{"x":0.21,"y":-0.14},{"x":0.35,"y":-0.09},{"x":0.4,"y":-0.1},{"x":0.06,"y":-0.17}]');
+  // flakes.push('[{"x":0.45,"y":-0.01},{"x":0.07,"y":-0.23},{"x":0.12,"y":-0.12},{"x":0.03,"y":-0.01},{"x":0.02,"y":-0.21}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.37,"y":-0.05},{"x":0.11,"y":-0.02},{"x":0.01,"y":-0.23},{"x":0.22,"y":-0.05}]');
+  // flakes.push('[{"x":0.02,"y":-0.03},{"x":0.27,"y":-0.21},{"x":0.29,"y":-0.1},{"x":0.3,"y":-0.11},{"x":0.03,"y":-0.07}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.19,"y":-0.02},{"x":0.28,"y":-0.02},{"x":0.14,"y":-0.01},{"x":0.05,"y":-0.17}]');
+  // flakes.push('[{"x":0.08,"y":-0.02},{"x":0.19,"y":-0.07},{"x":0.17,"y":-0.13},{"x":0.31,"y":-0.14},{"x":0.03,"y":-0.01}]');
+  // flakes.push('[{"x":0.13,"y":-0.21},{"x":0.45,"y":-0.1},{"x":0.48,"y":-0.06},{"x":0.44,"y":-0.03},{"x":0.06,"y":-0.06}]');
+  // flakes.push('[{"x":0.1,"y":-0.24},{"x":0.48,"y":-0.05},{"x":0.14,"y":-0.22},{"x":0.41,"y":-0.09},{"x":0.28,"y":0}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.02,"y":-0.05},{"x":0.31,"y":-0.13},{"x":0.02,"y":-0.12},{"x":0.02,"y":-0.09}]');
+  // flakes.push('[{"x":0.42,"y":-0.12},{"x":0.48,"y":-0.03},{"x":0.31,"y":-0.19},{"x":0.03,"y":-0.11},{"x":0.19,"y":-0.17}]');
+  // flakes.push('[{"x":0.17,"y":-0.01},{"x":0.5,"y":0},{"x":0.21,"y":-0.08},{"x":0.18,"y":-0.06},{"x":0.07,"y":-0.17}]');
+  // flakes.push('[{"x":0.42,"y":-0.06},{"x":0.29,"y":-0.07},{"x":0.37,"y":-0.11},{"x":0.48,"y":-0.02},{"x":0.08,"y":-0.04}]');
+  // flakes.push('[{"x":0.43,"y":-0.12},{"x":0.07,"y":-0.18},{"x":0.29,"y":-0.14},{"x":0.27,"y":-0.19},{"x":0.07,"y":-0.1}]');
+  // flakes.push('[{"x":0.18,"y":-0.06},{"x":0.14,"y":-0.05},{"x":0.1,"y":-0.05},{"x":0.12,"y":-0.15},{"x":0.1,"y":-0.09}]');
+  // flakes.push('[{"x":0.11,"y":-0.07},{"x":0.38,"y":0},{"x":0.46,"y":-0.03},{"x":0.14,"y":-0.08},{"x":0.2,"y":-0.06}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.14,"y":-0.06},{"x":0.43,"y":-0.09},{"x":0.13,"y":-0.02},{"x":0.1,"y":-0.06}]');
+  // flakes.push('[{"x":0.5,"y":0},{"x":0.07,"y":-0.03},{"x":0.08,"y":0},{"x":0.15,"y":-0.17},{"x":0.18,"y":-0.07}]');
+  // flakes.push('[{"x":0.42,"y":-0.03},{"x":0.28,"y":-0.03},{"x":0.27,"y":-0.03},{"x":0.44,"y":-0.11},{"x":0.1,"y":0}]');
+  // flakes.push('[{"x":0.29,"y":-0.01},{"x":0.42,"y":-0.07},{"x":0.41,"y":-0.13},{"x":0.03,"y":-0.01},{"x":0.22,"y":-0.13}]');
+  // flakes.push('[{"x":0.14,"y":0},{"x":0.04,"y":-0.18},{"x":0.05,"y":-0.13},{"x":0.1,"y":-0.02},{"x":0.31,"y":0}]');
+  // flakes.push('[{"x":0.05,"y":-0.16},{"x":0.37,"y":-0.11},{"x":0.48,"y":-0.01},{"x":0.3,"y":-0.19},{"x":0.08,"y":0}]');
 
   // flakes.push(' [{"x":0.46,"y":-0.0881816307401944},{"x":0.08,"y":-0.14806755215103679},{"x":-0.44,"y":-0.1021193419485261},{"x":0.18,"y":-0.13527808396041097},{"x":0.14,"y":-0.072}]');
 
   for(var i=0;i<flakes.length;i++)
   {
-    addNewSnowflake(0,flakes[i],false);
+    addNewSnowflakeToList(0,false,JSON.parse(flakes[i]),false);
   }
 
 
-  window.setInterval(function(){
+  // window.setInterval(function(){
 
-    var rand = function()
+  //   var rand = function()
+  //   {
+  //     var x = randomIntFromInterval(0,50)/100;
+
+  //     var maxY = Math.sqrt(Math.pow(0.5,2)-Math.pow(x,2));
+
+  //     var y = -randomIntFromInterval(0,Math.floor(50*maxY))/100;
+
+  //     return {x:x,y:y};
+  //   }
+
+  //   var p1 = rand();
+  //   var p2 = rand();
+  //   var p3 = rand();
+  //   var p4 = rand();
+  //   var p5 = rand();
+
+  //   addNewSnowflakeToList(0,'[{"x":'+p1.x+',"y":'+p1.y+'},{"x":'+p2.x+',"y":'+p2.y+'},{"x":'+p3.x+',"y":'+p3.y+'},{"x":'+p4.x+',"y":'+p4.y+'},{"x":'+p5.x+',"y":'+p5.y+'}]',true);
+
+
+
+  // },100);
+
+  // window.setInterval(function(){
+  //   highlightSnowflake(0,randomIntFromInterval(0,255),true);
+  //   console.log("availableFlakes: "+availableFlakes.length);
+  // },30000);
+
+  var connection = new WebsocketConnection(
+    wsHost,
+    8000,
     {
-      var x = randomIntFromInterval(0,50)/100;
-
-      var maxY = Math.sqrt(Math.pow(0.5,2)-Math.pow(x,2));
-
-      var y = -randomIntFromInterval(0,Math.floor(50*maxY))/100;
-
-      return {x:x,y:y};
+      open: onOpen,
+      close: function () {},
+      message: onMessage
+    }, {
+      autoConnect: true,
+      autoReconnect: true
     }
-
-    var p1 = rand();
-    var p2 = rand();
-    var p3 = rand();
-    var p4 = rand();
-    var p5 = rand();
-
-    addNewSnowflake(0,'[{"x":'+p1.x+',"y":'+p1.y+'},{"x":'+p2.x+',"y":'+p2.y+'},{"x":'+p3.x+',"y":'+p3.y+'},{"x":'+p4.x+',"y":'+p4.y+'},{"x":'+p5.x+',"y":'+p5.y+'}]',true);
-
-
-
-  },100);
-
-  window.setInterval(function(){
-    highlightSnowflake(0,randomIntFromInterval(0,255),true);
-    console.log("availableFlakes: "+availableFlakes.length);
-  },30000);
+  );  
 }
  
+
+"use strict";
+
+var SECRET = "UEh9R5PmuAUeieEqz5pJdZupXKw7AimAvjcVsky7BeKguUtVmYGIsQ5BIYoP";
+
+var Class = function() {
+  this.initialize && this.initialize.apply(this, arguments);
+};
+
+Class.extend = function(childPrototype) { // defining a static method 'extend'
+
+  var parent = this;
+  var child = function() { // the child constructor is a call to its parent's
+    return parent.apply(this, arguments);
+  };
+
+  child.extend = parent.extend; // adding the extend method to the child class
+
+  var Surrogate = function() {}; // surrogate "trick" as seen previously
+
+  Surrogate.prototype = parent.prototype;
+
+  child.prototype = new Surrogate();
+
+  for (var key in childPrototype) {
+    child.prototype[key] = childPrototype[key];
+  }
+
+  child.prototype.$super = parent;
+
+  return child; // returning the child class
+};
+
+function clone(obj) {
+  if (null == obj || "object" != typeof obj) return obj;
+  var copy = obj.constructor();
+  for (var attr in obj) {
+    if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+  }
+  return copy;
+}
+
+var WebsocketConnection = Class.extend({
+  initialize: function(serverHost, serverPort, callbacksByType, options) {
+
+    this.status = 'disconnected';
+
+    this.lastActivity = 0;
+
+    /* Mendatory options */
+    this.serverHost = serverHost;
+    this.serverPort = serverPort;
+
+    console.log("[clientConnection] Init with " + this.serverHost + "," + this.serverPort);
+
+    this.callbacksByType = {};
+
+    for (var callbackId in callbacksByType) {
+      console.log("[clientConnection] Registering callback " + callbackId);
+      this.setCallback(callbackId, callbacksByType[callbackId]);
+    }
+
+    /* Options with default values */
+    this.pingIntervalSeconds = options.hasOwnProperty('pingIntervalSeconds') ? options.pingIntervalSeconds : 10;
+    this.timeoutSeconds = options.hasOwnProperty('timeoutSeconds') ? options.timeoutSeconds : 30;
+    this.autoReconnect = options.hasOwnProperty('autoReconnect') ? options.autoReconnect : true;
+    this.autoConnect = options.hasOwnProperty('autoConnect') ? options.autoConnect : true;
+
+    if (this.autoConnect)
+      this.connect();
+
+    this.checkInterval = setInterval(this._doCheck.bind(this), this.pingIntervalSeconds * 1000);
+  },
+
+  sendMessage: function(message) {
+    message.secret = SECRET;
+    if (this.status === 'connected') {
+      this.client.send(JSON.stringify(message));
+    }
+  },
+  /**
+   * Connects the websocket to the endpoint. 
+   * 
+   * When this function is called, we assume there is no interval running.
+   */
+  connect: function() {
+
+    if (this.status !== 'disconnected')
+      return false;
+
+    this.status = 'connecting';
+
+    console.log("[clientConnection] Connecting to ws://" + this.serverHost + ':' + this.serverPort + '/');
+
+    this.client = new WebSocket('ws://' + this.serverHost + ':' + this.serverPort + '/', 'echo-protocol');
+
+    this.client.onerror = this._onError.bind(this);
+    this.client.onclose = this._onClose.bind(this);
+    this.client.onmessage = this._onMessage.bind(this);
+    this.client.onopen = this._onOpen.bind(this);
+
+    return true;
+  },
+
+  disconnect: function() {
+
+    if (this.status !== 'connected')
+      return false;
+
+    this.status = 'disconnecting';
+
+    this.client.close();
+
+    return true;
+  },
+
+  setCallback: function(name, callback) {
+
+    this.callbacksByType[name] = callback;
+  },
+
+  removeCallback: function(name) {
+
+    if (this.callbacksByType.hasOwnProperty(name))
+      delete this.callbacksByType[name];
+  },
+
+  _closingCodeToReason: function(code) {
+
+    var reason;
+
+    if (code === 1000)
+      reason = "Normal closure, meaning that the purpose for which the connection was established has been fulfilled.";
+    else if (code === 1001)
+      reason = "An endpoint is \"going away\", such as a server going down or a browser having navigated away from a page.";
+    else if (code === 1002)
+      reason = "An endpoint is terminating the connection due to a protocol error";
+    else if (code === 1003)
+      reason = "An endpoint is terminating the connection because it has received a type of data it cannot accept (e.g., an endpoint that understands only text data MAY send this if it receives a binary message).";
+    else if (code === 1004)
+      reason = "Reserved. The specific meaning might be defined in the future.";
+    else if (code === 1005)
+      reason = "No status code was actually present.";
+    else if (code === 1006)
+      reason = "The connection was closed abnormally, e.g., without sending or receiving a Close control frame";
+    else if (code === 1007)
+      reason = "An endpoint is terminating the connection because it has received data within a message that was not consistent with the type of the message (e.g., non-UTF-8 [http://tools.ietf.org/html/rfc3629] data within a text message).";
+    else if (code === 1008)
+      reason = "An endpoint is terminating the connection because it has received a message that \"violates its policy\". This reason is given either if there is no other sutible reason, or if there is a need to hide specific details about the policy.";
+    else if (code === 1009)
+      reason = "An endpoint is terminating the connection because it has received a message that is too big for it to process.";
+    else if (code === 1010) // Note that this status code is not used by the server, because it can fail the WebSocket handshake instead.
+      reason = "An endpoint (client) is terminating the connection because it has expected the server to negotiate one or more extension, but the server didn't return them in the response message of the WebSocket handshake. <br /> Specifically, the extensions that are needed are: " + event.reason;
+    else if (code === 1011)
+      reason = "A server is terminating the connection because it encountered an unexpected condition that prevented it from fulfilling the request.";
+    else if (code === 1015)
+      reason = "The connection was closed due to a failure to perform a TLS handshake (e.g., the server certificate can't be verified).";
+    else
+      reason = "Unknown reason";
+
+    return reason;
+  },
+
+  _doCallback: function(name, arg) {
+
+    if (this.callbacksByType.hasOwnProperty(name))
+      this.callbacksByType[name](this, arg);
+  },
+
+  _onError: function(error) {
+
+    this.status = 'disconnecting';
+
+    console.log('[clientConnection][ERROR] Cannot connect');
+
+    this.client.close();
+
+    this._doCallback('error', error);
+  },
+
+  _onClose: function(event) {
+
+    if (this.checkInterval !== null)
+      this.status = 'disconnected-waiting';
+    else
+      this.status = 'disconnected';
+
+    console.log('[clientConnection] closed. Reason: ' + this._closingCodeToReason(event.code));
+
+    this._doCallback('close', event.code);
+  },
+
+  _onMessage: function(message) {
+
+    message.utf8Data = message.data;
+
+    var parsedMessage = false;
+
+    this.lastActivity = (new Date()).getTime();
+
+    try {
+      parsedMessage = JSON.parse(message.utf8Data);
+
+    } catch (e) {
+      console.error('[clientConnection][ERROR] error parsing message ' + message.utf8Data);
+      return;
+    }
+
+    this._doCallback('message', parsedMessage);
+  },
+
+  _onOpen: function() {
+
+    this.status = 'connected';
+
+    this._doCallback('open');
+  },
+
+  _doCheck: function() {
+
+    /* If we loose the connection, try to close the connection and reconnect again */
+
+    switch (this.status) {
+      case 'disconnected-waiting':
+      case 'disconnected':
+
+        this.status = 'disconnected';
+
+        if (this.autoReconnect === true)
+          this.connect();
+        break;
+      case 'connected':
+        this.client.send(JSON.stringify({
+          type: 'ping',
+          secret: SECRET
+        }), function() {});
+        /* Check last activity in every case */
+        /* falls through */
+      default:
+        if (this.lastActivity + this.timeoutSeconds * 1000 < (new Date()).getTime()) {
+          this.status = 'disconnecting';
+          this.client.close();
+        }
+    }
+    this._doCallback('check', this.status);
+  },
+  getConnection: function() {
+    return this.client;
+  }
+}); 
