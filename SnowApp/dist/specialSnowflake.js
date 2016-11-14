@@ -29971,9 +29971,6 @@ $(document).ready(function(){
 
     // $(handle).parent().css({left:curPos.left+'px',top:curPos.top+'px'});
 
-
-    console.log(1,curPos); 
-
     // curPos.top += $(handle).height()/2;
     // curPos.left += $(handle).width()/2;
 
@@ -30027,7 +30024,6 @@ $(document).ready(function(){
         left:((rightBase.left+curPos.left)/2)+'px'});
     }
 
-    console.log(2,$(handle).position());    
   };
 
   var stopCallback  = function(handle){
@@ -30149,7 +30145,7 @@ $(document).ready(function(){
         drawcanvas(ctx);
       }
     }); 
-  }
+  } 
 
   $("#send").click(function(){
     
@@ -30165,17 +30161,17 @@ $(document).ready(function(){
 
     for(var i=0;i<points1.length;i++)
     {
-      normalizedPoints.push({x:points1[i].x/$wrapper.width(),y:points1[i].y/$wrapper.height()});
+      normalizedPoints.push({x:points1[i].x/$wrapper.width(),y:points1[i].y/$wrapper.outerHeight()});
 
       if(normalizedPoints[i].x < 0)
         normalizedPoints[i].x = 0;
       if(normalizedPoints.x > 1)
         normalizedPoints[i].x = 1;
 
-      if(normalizedPoints[i].y < 0)
-        normalizedPoints[i].y = 0;
-      if(normalizedPoints.y > 1)
-        normalizedPoints[i].y = 1;
+      // if(normalizedPoints[i].y > 0)
+      //   normalizedPoints[i].y = 0;
+      // if(normalizedPoints.y < -1)
+      //   normalizedPoints[i].y = -1;
     }
 
     $(this).addClass('disabled');

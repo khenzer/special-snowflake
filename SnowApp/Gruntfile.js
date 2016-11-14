@@ -68,9 +68,11 @@ module.exports = function (grunt) {
         },
         connect: {
             all: {
-                livereload: true,
-                port: 8000,
-                base: './'
+               
+		options:{
+                	port: 8001,
+                	base: './'
+		}
             }
         },        
         watch: {
@@ -82,7 +84,7 @@ module.exports = function (grunt) {
                 tasks: ['build'],
                 options: {
                     spawn: false,
-                    livereload: 35729
+                    livereload: 35730
                 },
             }           
         }

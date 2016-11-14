@@ -16,7 +16,8 @@
   ],
   "dependencies": {
     "three.js": "threejs#*",
-    "dat.gui": "*"
+    "dat.gui": "*",
+    "jquery": "^3.1.1"
   },
   "devDependencies": {
     "livereload-js": "^2.2.1"
