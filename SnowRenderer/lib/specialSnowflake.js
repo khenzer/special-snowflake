@@ -1,5 +1,7 @@
 window.onload = function() {
 
+  var ratio = 8192/838;
+
   var windChangingTime = 1/40000;
   var windWindowSize = 1/16;
   var windPower = 600;
@@ -8,12 +10,15 @@ window.onload = function() {
   var floodTimeoutAdd = 300;
   var floodTimeoutHighlight = 300;
 
+  var flakeMinSize = 5;
+  var flakeMaxSize = 20;
+
   var wsHost = "lausanne.pimp-my-wall.ch"
 
   var container, clock;
   var camera, scene, renderer, particles, geometry;
   var windowHalfX = window.innerWidth / 2;
-  var windowHalfY = window.innerHeight / 2;
+  var windowHalfY = window.innerWidth/ratio / 2;
 
   var lastAdd = new Date();
   var lastHighLight = new Date();
@@ -228,7 +233,7 @@ window.onload = function() {
     renderer.shadowMap.enabled = false;    
 
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(windowHalfX*2, windowHalfY*2);
     container.appendChild(renderer.domElement);
 
     camera = new THREE.OrthographicCamera( -windowHalfX, windowHalfX, windowHalfY, -windowHalfY, -1000, 1000 );
@@ -415,7 +420,7 @@ window.onload = function() {
 
     var flakeIndex = randomIntFromInterval(0,availableFlakes.length-1);
 
-    var size = randomIntFromInterval(5,40);
+    var size = randomIntFromInterval(flakeMinSize,flakeMaxSize);
 
     var geometry = new THREE.PlaneGeometry(size,size);
 
