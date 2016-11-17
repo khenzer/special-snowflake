@@ -18,12 +18,14 @@ window.onload = function() {
   var lastAdd = new Date();
   var lastHighLight = new Date();
 
+  var hues = [];
   var highLightList = [];
+
+  var hue = 0;
+  var lastAmountOfFlakes = 0;
 
   coeffPosition = 0.5;
   coeffAmplitude = 1;
-
-
 
   // Structure: {flakeId,userId,textureJSON}
   var availableFlakes = [];
@@ -46,8 +48,7 @@ window.onload = function() {
   var randomIntFromInterval = function(min,max)
   {
     return Math.floor(Math.random()*(max-min+1)+min);
-  }
-
+  };
 
   var generatePointList = function(points)
   {
@@ -185,9 +186,9 @@ window.onload = function() {
 
     delete canvas;
     canvas = null;
-  }
+  };
 
-  var highlightSnowflake = function(userId,hue,floodProtect)
+  var highlightSnowflake = function(userId,floodProtect)
   {
     var now = new Date();
 
@@ -201,19 +202,20 @@ window.onload = function() {
       if(highLightList[i].userId == userId)
         highLightList.splice(i,1);
     }
+ 
+    var hue = hues.find(function(e){if(e.userId == userId) return e;}).hue;
 
-    console.log("Highlighting "+userId);
+    console.log("[highlightSnowflake] Highlighting "+userId+" with hue "+hue);
 
     highLightList.push({userId:userId,hue:hue,lightness:1});
-  }
-
+  };
 
   var wind = function(time,x)
   {
     var t = x*windWindowSize+time*windChangingTime;
 
     return Math.sin(t)*Math.cos(3*t)*Math.sin(5*t)*Math.cos(7*t-1)*Math.sin(11*t-2)*Math.cos(13*t-3)*Math.sin(17*t-4)*Math.cos(21*t-5);
-  }
+  };
 
   var init = function()  
   {
@@ -222,7 +224,8 @@ window.onload = function() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
 
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({antialias:false});
+    renderer.shadowMap.enabled = false;    
 
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -231,7 +234,7 @@ window.onload = function() {
     camera = new THREE.OrthographicCamera( -windowHalfX, windowHalfX, windowHalfY, -windowHalfY, -1000, 1000 );
 
     scene = new THREE.Scene(); 
-    scene.fog = new THREE.FogExp2( 0x000000, 0.8 );
+    // scene.fog = new THREE.FogExp2( 0x000000, 0.8 );
 
     var textureLoader = new THREE.TextureLoader();
   }
@@ -242,14 +245,15 @@ window.onload = function() {
     render();
   }
 
-  function render() {
+  function render() 
+  {
     var toRemove = [];
     var toRemoveHighLight = [];
 
     var delta = clock.getDelta(); // In seconds
     var elapsedTime = clock.getElapsedTime()*1000;        
 
-    for ( i = 0; i < scene.children.length; i ++ )
+    for ( i = scene.children.length; i >= 0; i-- )
     {
       var object = scene.children[i];
 
@@ -259,7 +263,15 @@ window.onload = function() {
         {
           if(object.privateAttributes.userId == 0)
           {
-            toRemove.push(object);
+            var geometry = toRemove[i].geometry;
+            var material = toRemove[i].material;
+
+
+            scene.remove(toRemove[i]);
+
+            geometry.dispose();
+            material.dispose();
+
             continue;
           }
           // else
@@ -287,9 +299,7 @@ window.onload = function() {
 
         object.scale.x = scale;
         object.scale.y = scale;
-        object.scale.z = 1;
 
-        // console.log("Searching ",object.privateAttributes.userId); 
 
         var element = highLightList.find(function(element){
           if(element.userId == object.privateAttributes.userId)
@@ -300,74 +310,36 @@ window.onload = function() {
         {
           var color = new THREE.Color("hsl("+element.hue+",100%,"+Math.round(100-element.lightness*50)+"%)");
           object.material.color= color;
+          object.scale.x = 1+element.lightness;
+          object.scale.y = 1+element.lightness;
+
         }
       }
     }
 
     /* Fade highlights */
-    for(var i=0;i<highLightList.length;i++)
+    for(i = highLightList.length-1; i >=0 ;i--)
     {
-      highLightList[i].lightness *= 0.999;
+      highLightList[i].lightness *= 0.99;
 
       if(highLightList[i].lightness == 0)
       {
-        console.log("Removing highlight");
-        toRemoveHighLight.push(highLightList[i].userId);
+        console.log("[render] Removing highlight");
+        highLightList.splice(i,1);
       }
-      if(highLightList[i].lightness < 0.1)
+      else if(highLightList[i].lightness < 0.1)
       {
         highLightList[i].lightness = 0;
       }      
-    }
-
-    /* Clean out of the screen flakes */
-    for(var i=0;i<toRemove.length;i++)
-    {
-
-      var geometry = toRemove[i].geometry;
-      var material = toRemove[i].material;
-
-
-      scene.remove(toRemove[i]);
-
-      geometry.dispose();
-      material.dispose();
-
-      // console.log("Searching fo id  ",object.privateAttributes.flakeId);      
-
-      // var flake = availableFlakes.find(function(element){
-      //   if(element.flakeId == object.privateAttributes.flakeId)
-      //     return element;
-      // });
-
-      // console.log("Searching fo id  ",object.privateAttributes.flakeId);      
-
-      // console.log(availableFlakes.indexOf(flake));
-
-      // flake.texture.dispose();
-
-
-      // renderer.deallocateTexture( availableFlakes[flakeIndex].texture );
-
-      // availableFlakes.splice(availableFlakes.indexOf(flake), 1);
-    }
-
-    /* Clean finished highlights */
-    for(var i=0;i<toRemoveHighLight.length;i++)
-    {
-      var element = highLightList.find(function(element){
-        if(element.userId == toRemoveHighLight[i])
-          return element;
-      }); 
-
-      highLightList.splice(highLightList.indexOf(element),1);
     }
 
     renderer.render( scene, camera );
   }
 
   function saveState(connection) {
-    
+
+    console.log("[saveState] savestate");
+
     filteredArray = [];
 
     for(var i=0;i<availableFlakes.length;i++)
@@ -384,7 +356,7 @@ window.onload = function() {
 
     connection.sendMessage({
       type: 'saveState',
-      data: {flakes:filteredArray}
+      data: {flakes:filteredArray,hues:hues}
     });
 
   }
@@ -399,14 +371,26 @@ window.onload = function() {
   }  
 
   function onMessage(connection, parsedMessage) {
+
+    if(typeof(parsedMessage.data.userId) != 'undefined' && parsedMessage.data.userId != '')
+    {
+      if(hues.find(function(e){if(e.userId == parsedMessage.data.userId) return e;}) == undefined)
+      {
+        console.log("[onMessage] New user: "+parsedMessage.data.userId+" hue:"+hue);
+
+        hues.push({userId:parsedMessage.data.userId,hue:hue});
+        hue = (hue+60)%360;
+        saveState(connection);
+      }
+    }
+
     switch (parsedMessage.type) {
       case 'newSnowFlake':
         // console.log(parsedMessage);
         addNewSnowflakeToList(parsedMessage.data.userId,false,parsedMessage.data.points,true);
-        saveState(connection);        
         break;
       case 'showMyFlakes':
-        highlightSnowflake(parsedMessage.data.userId,randomIntFromInterval(0,254),true);
+        highlightSnowflake(parsedMessage.data.userId,true);
         // saveState(connection);        
         break;
       case 'hello':
@@ -438,13 +422,16 @@ window.onload = function() {
     var material = new THREE.MeshBasicMaterial({
       map: availableFlakes[flakeIndex].texture,
       blending: THREE.AdditiveBlending,
-      side:THREE.DoubleSide,
+      side:THREE.FrontSide,
       depthTest: false,
       transparent : true,
       color:0xFFFFFF,
       opacity:1 });
     
     particle = new THREE.Mesh(geometry,material);
+
+    particle.castShadow = false;
+    particle.receiveShadow = false;
 
     var positionX = randomIntFromInterval(-windowHalfX,windowHalfX);
     var positionY = windowHalfY+60;
@@ -610,6 +597,18 @@ window.onload = function() {
       autoConnect: true,
       autoReconnect: true
     }
-  );  
+  );
+
+  window.setInterval(function(){
+    
+    if(lastAmountOfFlakes == availableFlakes.length)
+      return;
+
+    lastAmountOfFlakes = availableFlakes.length;
+
+
+    saveState(connection);
+
+  },30000);  
 }
  
