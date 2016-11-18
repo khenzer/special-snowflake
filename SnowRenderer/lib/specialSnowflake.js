@@ -298,7 +298,7 @@ window.onload = function() {
           object.privateAttributes.position.z + Math.sin((elapsedTime%object.privateAttributes.rotation.y)/(object.privateAttributes.rotation.y-1)*2*Math.PI+object.privateAttributes.rotation.yPhase)*object.privateAttributes.rotation.yRadius
         );
 
-        object.rotation.set(0,0,object.privateAttributes.rotation.zDirection*(elapsedTime % object.privateAttributes.rotation.z)/(object.privateAttributes.rotation.z-1) + object.privateAttributes.rotation.zPhase, 'XYZ');
+        object.rotation.set(0,0,object.privateAttributes.rotation.zDirection*(elapsedTime / object.privateAttributes.rotation.z) + object.privateAttributes.rotation.zPhase, 'XYZ');
 
         var scale = Math.abs(object.position.z-object.privateAttributes.position.z)/object.privateAttributes.position.z/4+1;
 
@@ -315,8 +315,8 @@ window.onload = function() {
         {
           var color = new THREE.Color("hsl("+element.hue+",100%,"+Math.round(100-element.lightness*50)+"%)");
           object.material.color= color;
-          object.scale.x = 1+element.lightness;
-          object.scale.y = 1+element.lightness;
+          object.scale.x = 1+element.lightness*2;
+          object.scale.y = 1+element.lightness*2;
 
         }
       }
