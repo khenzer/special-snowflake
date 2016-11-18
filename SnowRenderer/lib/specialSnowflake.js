@@ -5,7 +5,7 @@ window.onload = function() {
   var windChangingTime = 1/40000;
   var windWindowSize = 1/16;
   var windPower = 600;
-  var textureResolution = 128;
+  var textureResolution = 64;
 
   var floodTimeoutAdd = 300;
   var floodTimeoutHighlight = 300;
