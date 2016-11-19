@@ -243,7 +243,7 @@ window.onload = function() {
 
     var textureLoader = new THREE.TextureLoader();
   }
-
+j=0;
   function animate()
   {
     if(Math.random() < 0.4)
@@ -257,6 +257,11 @@ window.onload = function() {
   {
     var delta = clock.getDelta(); // In seconds
     var elapsedTime = clock.getElapsedTime();        
+
+    j++;
+
+    if(j%0)
+      console.log(scene.children.length);
 
     for ( i = scene.children.length; i >= 0; i-- )
     {
@@ -276,6 +281,8 @@ window.onload = function() {
 
             object.geometry.dispose();
             object.material.dispose();
+
+            console.log("Removing "+i);
 
             continue;
           // }
