@@ -255,9 +255,6 @@ window.onload = function() {
 
   function render() 
   {
-    var toRemove = [];
-    var toRemoveHighLight = [];
-
     var delta = clock.getDelta(); // In seconds
     var elapsedTime = clock.getElapsedTime();        
 
@@ -271,16 +268,16 @@ window.onload = function() {
         {
           // if(object.privateAttributes.userId == 0)
           // {
-            var geometry = toRemove[i].geometry;
-            var material = toRemove[i].material;
+            // var geometry = toRemove[i].geometry;
+            // var material = toRemove[i].material;
 
 
-            scene.remove(toRemove[i]);
+            scene.remove(object);
 
-            geometry.dispose();
-            material.dispose();
+            object.geometry.dispose();
+            object.material.dispose();
 
-          //   continue;
+            continue;
           // }
           // else
             // object.position.setY(windowHalfY+60);
