@@ -10,8 +10,8 @@ window.onload = function() {
   var floodTimeoutAdd = 300;
   var floodTimeoutHighlight = 300;
 
-  var flakeMinSize = 5;
-  var flakeMaxSize = 20;
+  var flakeMinSize = 10;
+  var flakeMaxSize = 30;
 
   var wsHost = "lausanne.pimp-my-wall.ch"
 
@@ -475,10 +475,10 @@ window.onload = function() {
 
   window.setInterval(function(){
 
-    for(var i=0;i<10;i++)
+    for(var i=0;i<7;i++)
       addAvailableFlakeToScene()
  
-  },300);
+  },500);
 
   init();
   animate();      
