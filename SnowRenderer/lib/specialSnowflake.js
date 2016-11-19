@@ -2,7 +2,7 @@ window.onload = function() {
 
   var ratio = 8192/838;
 
-  var windChangingTime = 1/40000;
+  var windChangingTime = 1/40;
   var windWindowSize = 1/16;
   var windPower = 600;
   var textureResolution = 64;
@@ -259,7 +259,7 @@ window.onload = function() {
     var toRemoveHighLight = [];
 
     var delta = clock.getDelta(); // In seconds
-    var elapsedTime = clock.getElapsedTime()*1000;        
+    var elapsedTime = clock.getElapsedTime();        
 
     for ( i = scene.children.length; i >= 0; i-- )
     {
@@ -296,9 +296,9 @@ window.onload = function() {
            object.privateAttributes.position.x = windowHalfX+60;
 
         object.position.set(
-          object.privateAttributes.position.x + Math.cos((elapsedTime%object.privateAttributes.rotation.y)/(object.privateAttributes.rotation.y-1)*2*Math.PI+object.privateAttributes.rotation.yPhase)*object.privateAttributes.rotation.yRadius,
+          object.privateAttributes.position.x + Math.cos((elapsedTime/object.privateAttributes.rotation.y)*2*Math.PI+object.privateAttributes.rotation.yPhase)*object.privateAttributes.rotation.yRadius,
           object.position.y - delta*object.privateAttributes.speed.h,
-          object.privateAttributes.position.z + Math.sin((elapsedTime%object.privateAttributes.rotation.y)/(object.privateAttributes.rotation.y-1)*2*Math.PI+object.privateAttributes.rotation.yPhase)*object.privateAttributes.rotation.yRadius
+          object.privateAttributes.position.z + Math.sin((elapsedTime/object.privateAttributes.rotation.y)*2*Math.PI+object.privateAttributes.rotation.yPhase)*object.privateAttributes.rotation.yRadius
         );
 
         object.rotation.set(0,0,object.privateAttributes.rotation.zDirection*(elapsedTime / object.privateAttributes.rotation.z) + object.privateAttributes.rotation.zPhase, 'XYZ');
@@ -463,10 +463,10 @@ window.onload = function() {
       },
       rotation:
       {
-        z:randomIntFromInterval(1000,10000), // in ms/rad
+        z:randomIntFromInterval(1,10), // in ms/rad
         zPhase:randomIntFromInterval(0,360)/(2*Math.PI),
         zDirection:randomIntFromInterval(-1,1),
-        y:randomIntFromInterval(5000,10000), // in ms/rad
+        y:randomIntFromInterval(5,10), // in s/rad
         yPhase:randomIntFromInterval(0,360)/(2*Math.PI),
         yRadius:randomIntFromInterval(20,60)
       }
