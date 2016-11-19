@@ -56400,7 +56400,7 @@ window.onload = function() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
 
-    renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer = new THREE.WebGLRenderer({antialias:false});
     renderer.shadowMap.enabled = false;    
 
     renderer.setPixelRatio(window.devicePixelRatio);
