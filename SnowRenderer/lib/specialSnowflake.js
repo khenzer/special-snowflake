@@ -269,8 +269,8 @@ window.onload = function() {
       {
         if(object.position.y < -windowHalfY-60)
         {
-          if(object.privateAttributes.userId == 0)
-          {
+          // if(object.privateAttributes.userId == 0)
+          // {
             var geometry = toRemove[i].geometry;
             var material = toRemove[i].material;
 
@@ -280,8 +280,8 @@ window.onload = function() {
             geometry.dispose();
             material.dispose();
 
-            continue;
-          }
+          //   continue;
+          // }
           // else
             // object.position.setY(windowHalfY+60);
         }
