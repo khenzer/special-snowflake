@@ -258,10 +258,10 @@ j=0;
     var delta = clock.getDelta(); // In seconds
     var elapsedTime = clock.getElapsedTime();        
 
-    j++;
+    // j++;
 
-    if(j%0)
-      console.log(scene.children.length);
+    // if(j%100 == 0)
+    //   console.log(scene.children.length);
 
     for ( i = scene.children.length; i >= 0; i-- )
     {
@@ -282,7 +282,7 @@ j=0;
             object.geometry.dispose();
             object.material.dispose();
 
-            console.log("Removing "+i);
+            // console.log("Removing "+i);
 
             continue;
           // }
