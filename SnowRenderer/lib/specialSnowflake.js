@@ -191,6 +191,8 @@ window.onload = function() {
 
     delete canvas;
     canvas = null;
+
+    return availableFlakes.length -1;    
   };
 
   var highlightSnowflake = function(userId,floodProtect)
@@ -243,11 +245,11 @@ window.onload = function() {
 
     var textureLoader = new THREE.TextureLoader();
   }
-j=0;
+// j=0;
   function animate()
   {
-    if(Math.random() < 0.4)
-      addAvailableFlakeToScene();
+    // if(Math.random() < 0.4)
+    //   addAvailableFlakeToScene();
 
     requestAnimationFrame( animate );
     render();
@@ -276,15 +278,16 @@ j=0;
             // var geometry = toRemove[i].geometry;
             // var material = toRemove[i].material;
 
+            object.position.y = windowHalfY + 60 + Math.random()*60;
+            object.position.x = randomIntFromInterval(-windowHalfX,windowHalfX);
+            // scene.remove(object);
 
-            scene.remove(object);
+            // object.geometry.dispose();
+            // object.material.dispose();
 
-            object.geometry.dispose();
-            object.material.dispose();
+            // // console.log("Removing "+i);
 
-            // console.log("Removing "+i);
-
-            continue;
+            // continue;
           // }
           // else
             // object.position.setY(windowHalfY+60);
@@ -399,7 +402,8 @@ j=0;
     switch (parsedMessage.type) {
       case 'newSnowFlake':
         // console.log(parsedMessage);
-        addNewSnowflakeToList(parsedMessage.data.userId,false,parsedMessage.data.points,true);
+        var id = addNewSnowflakeToList(parsedMessage.data.userId,false,parsedMessage.data.points,true);
+        addAvailableFlakeToScene(id)
         break;
       case 'showMyFlakes':
         highlightSnowflake(parsedMessage.data.userId,true);
@@ -412,7 +416,8 @@ j=0;
         {
           var item = parsedMessage.data.state.flakes[i];
 
-          addNewSnowflakeToList(item.userId,item.flakeId,item.texturePoints,false);          
+          var id = addNewSnowflakeToList(item.userId,item.flakeId,item.texturePoints,false);
+          addAvailableFlakeToScene(id);
         }
         break;
       default:
@@ -420,12 +425,15 @@ j=0;
     }
   }
 
-  var addAvailableFlakeToScene = function()
+  var addAvailableFlakeToScene = function(id)
   {
     if(availableFlakes.length == 0)
       return;
 
-    var flakeIndex = randomIntFromInterval(0,availableFlakes.length-1);
+    var flakeIndex = id;
+
+    if(id === null)
+     flakeIndex = randomIntFromInterval(0,availableFlakes.length-1);
 
     var size = randomIntFromInterval(flakeMinSize,flakeMaxSize);
 
