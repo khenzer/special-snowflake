@@ -56415,6 +56415,7 @@ window.onload = function() {
 
   function animate()
   {
+    addAvailableFlakeToScene();
     requestAnimationFrame( animate );
     render();
   }
@@ -56454,7 +56455,7 @@ window.onload = function() {
 
         var normalizePosition = (object.position.y+windowHalfY)/(2*windowHalfY);
 
-        // object.privateAttributes.position.x += wind(elapsedTime,normalizePosition)*windPower*delta; 
+        object.privateAttributes.position.x += wind(elapsedTime,normalizePosition)*windPower*delta; 
 
         if( object.privateAttributes.position.x > windowHalfX+60)
            object.privateAttributes.position.x = -windowHalfX-60;
@@ -56467,12 +56468,12 @@ window.onload = function() {
           object.privateAttributes.position.z + Math.sin((elapsedTime%object.privateAttributes.rotation.y)/(object.privateAttributes.rotation.y-1)*2*Math.PI+object.privateAttributes.rotation.yPhase)*object.privateAttributes.rotation.yRadius
         );
 
-        // object.rotation.set(0,0,object.privateAttributes.rotation.zDirection*(elapsedTime / object.privateAttributes.rotation.z) + object.privateAttributes.rotation.zPhase, 'XYZ');
+        object.rotation.set(0,0,object.privateAttributes.rotation.zDirection*(elapsedTime / object.privateAttributes.rotation.z) + object.privateAttributes.rotation.zPhase, 'XYZ');
 
-        // var scale = Math.abs(object.position.z-object.privateAttributes.position.z)/object.privateAttributes.position.z/4+1;
+        var scale = Math.abs(object.position.z-object.privateAttributes.position.z)/object.privateAttributes.position.z/4+1;
 
-        // object.scale.x = scale;
-        // object.scale.y = scale;
+        object.scale.x = scale;
+        object.scale.y = scale;
 
 
         var element = highLightList.find(function(element){
@@ -56641,13 +56642,6 @@ window.onload = function() {
     scene.add(particle);
 
   }
-
-  window.setInterval(function(){
-
-    for(var i=0;i<7;i++)
-      addAvailableFlakeToScene()
- 
-  },500);
 
   init();
   animate();      
