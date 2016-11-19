@@ -229,7 +229,7 @@ window.onload = function() {
     container = document.createElement( 'div' );
     document.body.appendChild( container );
 
-    renderer = new THREE.WebGLRenderer({antialias:false});
+    renderer = new THREE.WebGLRenderer({antialias:true});
     renderer.shadowMap.enabled = false;    
 
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -246,7 +246,9 @@ window.onload = function() {
 
   function animate()
   {
-    addAvailableFlakeToScene();
+    if(Math.random() < 0.5)
+      addAvailableFlakeToScene();
+
     requestAnimationFrame( animate );
     render();
   }
