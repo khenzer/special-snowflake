@@ -56415,7 +56415,7 @@ window.onload = function() {
 
   function animate()
   {
-    if(Math.random() < 0.5)
+    if(Math.random() < 0.2)
       addAvailableFlakeToScene();
 
     requestAnimationFrame( animate );
