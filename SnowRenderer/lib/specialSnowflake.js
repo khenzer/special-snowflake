@@ -1,6 +1,6 @@
 window.onload = function() {
 
-  var ratio = 8192/838;
+  var ratio = 4000/450;
 
   var windChangingTime = 1/40;
   var windWindowSize = 1/16;

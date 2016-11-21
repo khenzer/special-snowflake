@@ -1,4 +1,4 @@
-/*! SpecialSnowflake - v1.0.0 - 2016-11-19
+/*! SpecialSnowflake - v1.0.0 - 2016-11-21
 * http://vulliens17.ch
 * Copyright (c) 2016 ; Licensed GPL-3.0 */
 /** @namespace */
@@ -56169,7 +56169,7 @@ return jQuery;
 
 window.onload = function() {
 
-  var ratio = 8192/838;
+  var ratio = 4000/450;
 
   var windChangingTime = 1/40;
   var windWindowSize = 1/16;
