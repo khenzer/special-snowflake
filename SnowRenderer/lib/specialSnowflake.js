@@ -11,8 +11,8 @@ window.onload = function() {
   var floodTimeoutAdd = 300;
   var floodTimeoutHighlight = 300;
 
-  var flakeMinSize = 20;
-  var flakeMaxSize = 50;
+  var flakeMinSize = 40;
+  var flakeMaxSize = 64;
 
   var wsHost = "lausanne.pimp-my-wall.ch"
 
