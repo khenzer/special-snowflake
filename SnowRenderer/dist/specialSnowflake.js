@@ -56180,8 +56180,8 @@ window.onload = function() {
   var floodTimeoutAdd = 300;
   var floodTimeoutHighlight = 300;
 
-  var flakeMinSize = 10;
-  var flakeMaxSize = 30;
+  var flakeMinSize = 20;
+  var flakeMaxSize = 50;
 
   var wsHost = "lausanne.pimp-my-wall.ch"
 
