@@ -1,4 +1,4 @@
-/*! SpecialSnowflake - v1.0.0 - 2016-11-21
+/*! SpecialSnowflake - v1.0.0 - 2016-11-22
 * http://vulliens17.ch
 * Copyright (c) 2016 ; Licensed GPL-3.0 */
 /** @namespace */
@@ -56170,6 +56170,7 @@ return jQuery;
 window.onload = function() {
 
   var ratio = 4000/450;
+  var boundariesXrel = [3159/8000,4885/8000];
 
   var windChangingTime = 1/40;
   var windWindowSize = 1/16;
@@ -56446,9 +56447,11 @@ window.onload = function() {
           // {
             // var geometry = toRemove[i].geometry;
             // var material = toRemove[i].material;
+            randX = randomIntFromInterval(-windowHalfX,windowHalfX);
+            // console.log("From: "+(-windowHalfX)+" to "+windowHalfX);
 
-            object.position.y = windowHalfY + 60 + Math.random()*60;
-            object.position.x = randomIntFromInterval(-windowHalfX,windowHalfX);
+            object.position.y = object.privateAttributes.position.y = windowHalfY + 60 + Math.random()*60;
+            object.position.x = object.privateAttributes.position.x = randX;
             // scene.remove(object);
 
             // object.geometry.dispose();
@@ -56622,7 +56625,9 @@ window.onload = function() {
     particle.castShadow = false;
     particle.receiveShadow = false;
 
-    var positionX = randomIntFromInterval(-windowHalfX,windowHalfX);
+    
+
+    var positionX = randomIntFromInterval(-windowHalfX,boundariesXrel[0]*windowHalfX*2-windowHalfX);
     var positionY = windowHalfY+60;
     var positionZ = randomIntFromInterval(40,80);
 
