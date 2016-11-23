@@ -69,7 +69,7 @@ module.exports = function (grunt) {
         connect: {
             all: {
                 livereload: true,
-                port: 8000,
+                port: 8001,
                 base: './'
             }
         },        

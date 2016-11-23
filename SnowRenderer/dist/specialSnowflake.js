@@ -1,4 +1,4 @@
-/*! SpecialSnowflake - v1.0.0 - 2016-11-22
+/*! SpecialSnowflake - v1.0.0 - 2016-11-23
 * http://vulliens17.ch
 * Copyright (c) 2016 ; Licensed GPL-3.0 */
 /** @namespace */
@@ -56169,8 +56169,12 @@ return jQuery;
 
 window.onload = function() {
 
-  var ratio = 4000/450;
-  var boundariesXrel = [3159/8000,4885/8000];
+  var ratio = 5000/923;
+  var boundariesXrel = [3221/5000,4885/8000];
+ 
+  var recycle = false;
+  var maxFlakes = 100;
+  var shownFlakes = 0;
 
   var windChangingTime = 1/40;
   var windWindowSize = 1/16;
@@ -56418,14 +56422,16 @@ window.onload = function() {
 // j=0;
   function animate()
   {
-    // if(Math.random() < 0.4)
-    //   addAvailableFlakeToScene();
+    if(!recycle && shownFlakes < maxFlakes)
+        addAvailableFlakeToScene();
+ 
+    simulate();
+    renderer.render( scene, camera );
 
-    requestAnimationFrame( animate );
-    render();
+    requestAnimationFrame( animate );    
   }
 
-  function render() 
+  function simulate() 
   {
     var delta = clock.getDelta(); // In seconds
     var elapsedTime = clock.getElapsedTime();        
@@ -56443,6 +56449,8 @@ window.onload = function() {
       {
         if(object.position.y < -windowHalfY-60)
         {
+          if(recycle)
+          {
           // if(object.privateAttributes.userId == 0)
           // {
             // var geometry = toRemove[i].geometry;
@@ -56452,10 +56460,16 @@ window.onload = function() {
 
             object.position.y = object.privateAttributes.position.y = windowHalfY + 60 + Math.random()*60;
             object.position.x = object.privateAttributes.position.x = randX;
-            // scene.remove(object);
+          }
+          else
+          {
+            shownFlakes--;            
 
-            // object.geometry.dispose();
-            // object.material.dispose();
+            scene.remove(object);
+
+            object.geometry.dispose();
+            object.material.dispose();
+          }
 
             // // console.log("Removing "+i);
 
@@ -56520,7 +56534,6 @@ window.onload = function() {
       }      
     }
 
-    renderer.render( scene, camera );
   }
 
   function saveState(connection) {
@@ -56575,7 +56588,7 @@ window.onload = function() {
       case 'newSnowFlake':
         // console.log(parsedMessage);
         var id = addNewSnowflakeToList(parsedMessage.data.userId,false,parsedMessage.data.points,true);
-        addAvailableFlakeToScene(id)
+        addAvailableFlakeToScene(id,true)
         break;
       case 'showMyFlakes':
         highlightSnowflake(parsedMessage.data.userId,true);
@@ -56585,11 +56598,11 @@ window.onload = function() {
         // console.log("Restore state:",parsedMessage);
 
         for(var i=0;i<parsedMessage.data.state.flakes.length;i++)
-        {
+        { 
           var item = parsedMessage.data.state.flakes[i];
 
           var id = addNewSnowflakeToList(item.userId,item.flakeId,item.texturePoints,false);
-          addAvailableFlakeToScene(id);
+          // addAvailableFlakeToScene(id);
         }
         break;
       default:
@@ -56597,19 +56610,25 @@ window.onload = function() {
     }
   }
 
-  var addAvailableFlakeToScene = function(id)
+  var addAvailableFlakeToScene = function(id,showOnFirstFace)
   {
     if(availableFlakes.length == 0)
       return;
 
+    shownFlakes++;
+
     var flakeIndex = id;
 
-    if(id === null)
+    // console.log(id);
+
+    if(id === undefined || id === null)
      flakeIndex = randomIntFromInterval(0,availableFlakes.length-1);
 
     var size = randomIntFromInterval(flakeMinSize,flakeMaxSize);
 
     var geometry = new THREE.PlaneGeometry(size,size);
+ 
+    // console.log(flakeIndex,availableFlakes[flakeIndex]);
 
     var material = new THREE.MeshBasicMaterial({
       map: availableFlakes[flakeIndex].texture,
@@ -56625,9 +56644,7 @@ window.onload = function() {
     particle.castShadow = false;
     particle.receiveShadow = false;
 
-    
-
-    var positionX = randomIntFromInterval(-windowHalfX,boundariesXrel[0]*windowHalfX*2-windowHalfX);
+    var positionX = showOnFirstFace ? randomIntFromInterval(-windowHalfX,boundariesXrel[0]*windowHalfX*2-windowHalfX) : randomIntFromInterval(-windowHalfX,windowHalfX);
     var positionY = windowHalfY+60;
     var positionZ = randomIntFromInterval(40,80);
 
