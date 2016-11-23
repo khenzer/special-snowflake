@@ -56169,8 +56169,8 @@ return jQuery;
 
 window.onload = function() {
 
-  var ratio = 5000/923;
-  var boundariesXrel = [3221/5000,4885/8000];
+  var ratio = 5.79;
+  var boundariesXrel = [0.6622,4885/8000];
  
   var recycle = false;
   var maxFlakes = 100;
