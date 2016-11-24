@@ -12,11 +12,13 @@ window.onload = function() {
   var windPower = 600;
   var textureResolution = 64;
 
-  var floodTimeoutAdd = 300;
-  var floodTimeoutHighlight = 300;
+  var floodTimeoutAdd = 2000;
+  var floodTimeoutHighlight = 2000;
 
   var flakeMinSize = 40;
   var flakeMaxSize = 64;
+
+  var lightnessDecrease = 0.995;
 
   var wsHost = "lausanne.pimp-my-wall.ch"
 
@@ -25,8 +27,8 @@ window.onload = function() {
   var windowHalfX = window.innerWidth / 2;
   var windowHalfY = window.innerWidth/ratio / 2;
 
-  var lastAdd = new Date();
-  var lastHighLight = new Date();
+  var lastAdd = {};
+  var lastHighLight = {};
 
   var hues = [];
   var highLightList = [];
@@ -107,11 +109,13 @@ window.onload = function() {
   {
     var now = new Date();
 
-    if(floodProtect && (now.getTime()-lastAdd.getTime() < floodTimeoutAdd))
+    if(floodProtect && userId in lastAdd && (now.getTime()-lastAdd[userId].getTime() < floodTimeoutAdd))
       return;
 
     if(flakeId !== false && availableFlakes.find(function(e){return e.flakeId===flakeId;}) != undefined)
       return;  
+
+    lastAdd[userId] = now;      
 
     flakeId = guid();
 
@@ -122,7 +126,6 @@ window.onload = function() {
     if(points.length < 2 || points.length > 5)
       return; 
 
-    lastAdd = now;    
 
     for(var i=0;i < points.length; i++)
     {
@@ -204,10 +207,10 @@ window.onload = function() {
   {
     var now = new Date();
 
-    if(floodProtect && (now.getTime()-lastHighLight.getTime() < floodTimeoutHighlight))
+    if(floodProtect && userId in lastHighLight && (now.getTime()-lastHighLight[userId].getTime() < floodTimeoutHighlight))
       return;
 
-    lastHighLight = now;
+    lastHighLight[userId] = now;
 
     for(i=highLightList.length-1;i >= 0;i--)
     {
@@ -248,7 +251,7 @@ window.onload = function() {
     scene = new THREE.Scene(); 
     // scene.fog = new THREE.FogExp2( 0x000000, 0.8 );
 
-    var textureLoader = new THREE.TextureLoader();
+    // var textureLoader = new THREE.TextureLoader();
   }
 // j=0;
   function animate()
@@ -352,7 +355,7 @@ window.onload = function() {
     /* Fade highlights */
     for(i = highLightList.length-1; i >=0 ;i--)
     {
-      highLightList[i].lightness *= 0.99;
+      highLightList[i].lightness *= lightnessDecrease;
 
       if(highLightList[i].lightness == 0)
       {
@@ -419,13 +422,14 @@ window.onload = function() {
       case 'newSnowFlake':
         // console.log(parsedMessage);
         var id = addNewSnowflakeToList(parsedMessage.data.userId,false,parsedMessage.data.points,true);
-        addAvailableFlakeToScene(id,true)
+        addAvailableFlakeToScene(id,true);
+        highlightSnowflake(parsedMessage.data.userId,true);        
         break;
       case 'showMyFlakes':
         highlightSnowflake(parsedMessage.data.userId,true);
         // saveState(connection);        
         break;
-      case 'hello':
+      case 'hello': 
         // console.log("Restore state:",parsedMessage);
 
         for(var i=0;i<parsedMessage.data.state.flakes.length;i++)
@@ -493,7 +497,7 @@ window.onload = function() {
       },
       speed:
       {
-        h:randomIntFromInterval(30,150) // Pixels/sec
+        h:randomIntFromInterval(15,75) // Pixels/sec
       },
       rotation:
       {
@@ -585,10 +589,10 @@ window.onload = function() {
 
   // flakes.push(' [{"x":0.46,"y":-0.0881816307401944},{"x":0.08,"y":-0.14806755215103679},{"x":-0.44,"y":-0.1021193419485261},{"x":0.18,"y":-0.13527808396041097},{"x":0.14,"y":-0.072}]');
 
-  for(var i=0;i<flakes.length;i++)
-  {
-    addNewSnowflakeToList(0,false,JSON.parse(flakes[i]),false);
-  }
+  // for(var i=0;i<flakes.length;i++)
+  // {
+  //   addNewSnowflakeToList(0,false,JSON.parse(flakes[i]),false);
+  // }
 
 
   // window.setInterval(function(){

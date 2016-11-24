@@ -79,7 +79,7 @@ module.exports = function (grunt) {
             },
             scripts: {
                 files: ['index.html','lib/*.js','lib/*.css'],
-                tasks: ['build'],
+                tasks: ['default'],
                 options: {
                     spawn: false,
                     livereload: 35729
@@ -101,7 +101,7 @@ module.exports = function (grunt) {
  
     // Default task
 
-    grunt.registerTask('default', ['bower_concat','concat','concat_css','uglify','cssmin','htmlmin']);
+    grunt.registerTask('default', ['bower_concat','concat','concat_css']);
     grunt.registerTask('build', ['bower_concat','concat','concat_css','uglify','cssmin','htmlmin']);
     grunt.registerTask('serve', ['connect','watch']);//     
 
