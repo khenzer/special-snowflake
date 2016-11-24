@@ -497,7 +497,7 @@ window.onload = function() {
       },
       speed:
       {
-        h:randomIntFromInterval(15,75) // Pixels/sec
+        h:randomIntFromInterval(10,45) // Pixels/sec
       },
       rotation:
       {
