@@ -56187,7 +56187,7 @@ window.onload = function() {
   var flakeMinSize = 40;
   var flakeMaxSize = 64;
 
-  var lightnessDecrease = 0.995;
+  var lightnessDecrease = 0.999;
 
   var wsHost = "lausanne.pimp-my-wall.ch"
 
