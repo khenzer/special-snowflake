@@ -1,6 +1,6 @@
 window.onload = function() {
 
-  var ratio = 5.79;
+  var ratio = $(window).width() / $(window).height();
   var boundariesXrel = [0.6622,4885/8000];
  
   var recycle = false;
