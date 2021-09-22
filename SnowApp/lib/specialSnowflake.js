@@ -1,12 +1,19 @@
+/**
+ * @brief JS lib supporting the Special Snowflake WebUI. 
+ * 
+ * Depends on jQuery and jQueryUI for the .draggable feature
+ * 
+ * @author Kevin Henzer, Florian Segginger
+ */
+
 $(document).ready(function(){
 
-  var serverUrl = "http://lausanne.pimp-my-wall.ch";
+  // URL to send our snowflakes to
+  var serverUrl = null;
   var serverPage = "";
 
+  // UI State variables
   var sendDisabled = false;
-
-  var origPosLeft={top:$("#leftBoundary").position().top,left:$("#leftBoundary").position().left};
-  var origPosRight={top:$("#rightBoundary").position().top,left:$("#rightBoundary").position().left};
 
   var $wrapper = $("#wrapper");
   var $canvas = $("#wrapper canvas");
@@ -16,105 +23,11 @@ $(document).ready(function(){
   ctx.canvas.height = $wrapper.outerHeight();
   ctx.canvas.width = $wrapper.outerWidth();
 
-  var userId = '';
-
+  // List of snowflake edges, and its symmetry
   var points1 = []; 
   var points2 = []; 
 
-  var startCallback = function(handle,ui){
-
-    if($(".cursor").length < 5)
-    {
-      $(handle).next('.set').before($('<div class="cursor"><div></div></div>'));
-      $(handle).prev('.set').after( $('<div class="cursor"><div></div></div>'));
-    }
-    $(handle).addClass("set");
-  }; 
-
-  var dragCallback = function(handle,ui){
-
-    var curPos = {
-      left:$(handle).position().left,
-      top:$(handle).position().top
-    };
-
-    // $(handle).parent().css({left:curPos.left+'px',top:curPos.top+'px'});
-
-    // curPos.top += $(handle).height()/2;
-    // curPos.left += $(handle).width()/2;
-
-    centerPos = {top:$wrapper.outerWidth()/2,left:$wrapper.outerHeight()/2};
-
-    if(ui.position.top > centerPos.top - $(handle).height()/2)
-    {
-      console.log("Constraining top");
-      ui.position.top = curPos.top = centerPos.top - $(handle).height()/2;
-    }
-    if(ui.position.left < centerPos.left-$(handle).width()/2)
-    {
-      console.log("Constraining left");      
-      ui.position.left = curPos.left = centerPos.left-$(handle).width()/2;        
-    }
-    if(ui.position.top < 0)
-    {
-      console.log("Constraining top");      
-      ui.position.top = curPos.top = 0;
-    }
-    if(ui.position.left > $wrapper.outerWidth()-$(handle).width())
-    {
-      console.log("Constraining left");      
-      ui.position.left = curPos.left = $wrapper.outerWidth()-$(handle).width();  
-    }
-
-    var leftItem = $(handle).prev().prev();
-    var rightItem = $(handle).next().next();
-
-    if(leftItem.length > 0)
-    {
-      var leftBase = leftItem.position();
-
-      // leftBase.left += leftItem.width()/2;
-      // leftBase.top += leftItem.height()/2;
-
-      $(handle).prev(':not(".set")').css({
-        top:((leftBase.top+curPos.top)/2)+'px',
-        left:((leftBase.left+curPos.left)/2)+'px'});
-    }
-
-    if(rightItem.length > 0)
-    {
-      var rightBase = rightItem.position();
-
-      // rightBase.left += rightItem.width()/2;    
-      // rightBase.top += rightItem.height()/2;
-
-      $(handle).next(':not(".set")').css({
-        top:((rightBase.top+curPos.top)/2)+'px',
-        left:((rightBase.left+curPos.left)/2)+'px'});
-    }
-
-  };
-
-  var stopCallback  = function(handle){
-
-    $(".cursor").each(function(){
-      
-      // var topAbs = ($(this).position().top);
-      // var topRel = topAbs/$wrapper.outerHeight()*100;
-      // var leftAbs = ($(this).position().left);
-      // var leftRel = leftRel/$wrapper.width()*100;
-
-      // $(this).css({
-      //   top:topRel+'%',
-      //   left:leftRel+'%'
-      // });
-
-    });
-      makeDraggable();
-
-  };
-
-
+  // Sync points list from cursor DOM elements
   var updatePointList = function(){
 
     points1 = [];
@@ -134,11 +47,6 @@ $(document).ready(function(){
       if(orthX >$wrapper.width()/2)
         orthX = $wrapper.width()/2;    
 
-      // if(orthY <= 0)
-      //   orthY = 0.000001;          
-      // if(orthY > $wrapper.height()/2)
-      //   orthY = $wrapper.height()/2;
-
       var theta = Math.atan(orthY/orthX);
 
       var thetaSym = theta-2*(theta+Math.PI/3);
@@ -154,6 +62,7 @@ $(document).ready(function(){
     points2.reverse();
   };
 
+  // Draw actual snowflake shape from points list
   var drawcanvas = function(ctx)
   {
     ctx.fillStyle = '#000';    
@@ -185,10 +94,81 @@ $(document).ready(function(){
     ctx.fill();
 
     ctx.restore();
-  }
+  };
 
+  // Make DOM cursors draggeable, and install the correct callbacks
   var makeDraggable = function()
   {
+    
+    var startCallback = function(handle,ui){
+
+      if($(".cursor").length < 5)
+      {
+        $(handle).next('.set').before($('<div class="cursor"><div></div></div>'));
+        $(handle).prev('.set').after( $('<div class="cursor"><div></div></div>'));
+      }
+      $(handle).addClass("set");
+    }; 
+
+    var dragCallback = function(handle,ui){
+
+      var curPos = {
+        left:$(handle).position().left,
+        top:$(handle).position().top
+      };
+
+      centerPos = {top:$wrapper.outerWidth()/2,left:$wrapper.outerHeight()/2};
+
+      if(ui.position.top > centerPos.top - $(handle).height()/2)
+      {
+        console.log("Constraining top");
+        ui.position.top = curPos.top = centerPos.top - $(handle).height()/2;
+      }
+
+      if(ui.position.left < centerPos.left-$(handle).width()/2)
+      {
+        console.log("Constraining left");      
+        ui.position.left = curPos.left = centerPos.left-$(handle).width()/2;        
+      }
+
+      if(ui.position.top < 0)
+      {
+        console.log("Constraining top");      
+        ui.position.top = curPos.top = 0;
+      }
+
+      if(ui.position.left > $wrapper.outerWidth()-$(handle).width())
+      {
+        console.log("Constraining left");      
+        ui.position.left = curPos.left = $wrapper.outerWidth()-$(handle).width();  
+      }
+
+      var leftItem = $(handle).prev().prev();
+      var rightItem = $(handle).next().next();
+
+      if(leftItem.length > 0)
+      {
+        var leftBase = leftItem.position();
+
+        $(handle).prev(':not(".set")').css({
+          top:((leftBase.top+curPos.top)/2)+'px',
+          left:((leftBase.left+curPos.left)/2)+'px'});
+      }
+
+      if(rightItem.length > 0)
+      {
+        var rightBase = rightItem.position();
+
+        $(handle).next(':not(".set")').css({
+          top:((rightBase.top+curPos.top)/2)+'px',
+          left:((rightBase.left+curPos.left)/2)+'px'});
+      }
+    };
+
+    var stopCallback  = function(handle){
+
+      makeDraggable();
+    };
 
    $(".cursor").draggable({
 
@@ -214,8 +194,9 @@ $(document).ready(function(){
         drawcanvas(ctx);
       }
     }); 
-  } 
+  };
 
+  // Install UI buttons callbacks
   $("#send").click(function(){
     
     if(sendDisabled)
@@ -231,26 +212,9 @@ $(document).ready(function(){
     for(var i=0;i<points1.length;i++)
     {
       normalizedPoints.push({x:points1[i].x/$wrapper.width(),y:points1[i].y/$wrapper.outerHeight()});
-
-      // if(normalizedPoints[i].x < 0)
-      //   normalizedPoints[i].x = 0;
-      // if(normalizedPoints.x > 1)
-      //   normalizedPoints[i].x = 1;
-
-      // if(normalizedPoints[i].y > 0)
-      //   normalizedPoints[i].y = 0;
-      // if(normalizedPoints.y < -1)
-      //   normalizedPoints[i].y = -1;
     }
 
     $(this).addClass('disabled');
-
-    console.log(JSON.stringify(normalizedPoints));
-
-    $.post(serverUrl+serverPage, { 
-      type:"newSnowFlake",
-      data:JSON.stringify(normalizedPoints)
-    });    
 
     window.setTimeout(function(){
       
@@ -259,6 +223,12 @@ $(document).ready(function(){
 
     },5000);
 
+    console.log(JSON.stringify(normalizedPoints));
+
+    $.post(serverUrl+serverPage, { 
+      type:"newSnowFlake",
+      data:JSON.stringify(normalizedPoints)
+    });    
   });
 
   $("#reset").click(function(){
@@ -284,13 +254,13 @@ $(document).ready(function(){
 
     $.get(serverUrl+serverPage, { 
       type:"showMyFlakes",
-      data:userId
+      data:''
     });   
-
   });
 
   makeDraggable();
 
+  // Center DOM cursors
   $(".cursor").each(function(){
     $(this).css({left:$(this).position().left-$(this).width()/2+"px"});
     $(this).css({top:$(this).position().top-$(this).height()/2+"px"});
