@@ -14,7 +14,7 @@ Mobile-first single page web page that allows the user to create custom snowflak
 
 Using jQuery and jQuery-ui's draggable function. Those dependencies could be dropped easily.
 
-![Usage example](doc/SnowApp-1.gif)
+![Usage example](SnowApp/doc/SnowApp-1.gif)
 
 ## SnowRenderer
 Minimalist full screen web page, rendering of a snow tempest.
