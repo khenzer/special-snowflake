@@ -1,0 +1,23 @@
+{
+  "name": "special-snowflake-webapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "jsmin": "node node_modules/.bin/uglifyjs node_modules/jquery/dist/jquery.js node_modules/jquery-ui-dist/jquery-ui.js node_modules/jquery-ui-touch-punch/jquery.ui.touch-punch.js > dist/dependencies.min.js"
+  },
+  "author": "Kevin Henzer",
+  "contributors": [
+    "Florian Segginger"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "jquery": "^3.6.0",
+    "jquery-ui-dist": "^1.12.1",
+    "jquery-ui-touch-punch": "^0.2.3"
+  }
+}

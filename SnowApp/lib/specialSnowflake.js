@@ -1,7 +1,7 @@
 /**
  * @brief JS lib supporting the Special Snowflake WebUI. 
  * 
- * Depends on jQuery and jQueryUI for the .draggable feature
+ * Depends jQuery and jQueryUI for the .draggable feature
  * 
  * @author Kevin Henzer, Florian Segginger
  */
