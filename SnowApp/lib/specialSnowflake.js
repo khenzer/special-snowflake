@@ -1,5 +1,5 @@
 /**
- * @brief JS lib supporting the Special Snowflake WebUI. 
+ * @brief JS lib supporting the Special Snowflake WebApp UI. 
  * 
  * Depends jQuery and jQueryUI for the .draggable feature
  * 
@@ -8,9 +8,17 @@
 
 $(document).ready(function(){
 
+  // Are we running in debug mode?
+  var debug = window.location.hash && window.location.hash.substring(1) == 'debug';
+
   // URL to send our snowflakes to
   var serverUrl = null;
-  var serverPage = "";
+
+  // Amount of petals
+  var petalAmount = 6;
+
+  // Color of the snowflake
+  var snowFlakeColor = 'rgba(0,255,255,0.5)';
 
   // UI State variables
   var sendDisabled = false;
@@ -28,6 +36,9 @@ $(document).ready(function(){
   var points2 = []; 
 
   // Sync points list from cursor DOM elements
+  //
+  // This function is common to both the WebApp and the Web renderer
+  //
   var updatePointList = function(){
 
     points1 = [];
@@ -37,24 +48,31 @@ $(document).ready(function(){
 
     $(".cursor").each(function(){
 
+      // This function is common to both the WebApp and the Web renderer
+
+      // Get coordinates of the cursors, in pixels, with the middle of the snowflake as origin
       orthX = -($wrapper.width()/2-$(this).position().left-$(this).width()/2);
       orthY = -($wrapper.outerHeight()/2-$(this).position().top-$(this).height()/2);
 
-      var r = Math.sqrt(Math.pow(orthX,2)+Math.pow(orthY,2));
+      // Constraint x
+      if(orthX > $wrapper.width()/2)
+        orthX = $wrapper.width()/2;
+      else if(orthX < 0)
+        orthX = 0;
 
-      if(orthX<=0)
-        orthX = 0.000001;
-      if(orthX >$wrapper.width()/2)
-        orthX = $wrapper.width()/2;    
-
+      // Get polar coordinates of the point, 
+      var r     = Math.sqrt(Math.pow(orthX,2)+Math.pow(orthY,2));
       var theta = Math.atan(orthY/orthX);
 
-      var thetaSym = theta-2*(theta+Math.PI/3);
+      var thetaSym = -theta-Math.PI/petalAmount*(petalAmount-2);
 
       orthXsym = r*Math.cos(thetaSym);
-      orthYsym = r*Math.sin(thetaSym);      
+      orthYsym = r*Math.sin(thetaSym);
 
+      // Center of the snow flake as origin, normalized 
       points1.push({x:orthX,y:orthY});
+
+      // "Reversed point", to force some symmetry
       points2.push({x:orthXsym,y:orthYsym});
 
     });
@@ -65,6 +83,7 @@ $(document).ready(function(){
   // Draw actual snowflake shape from points list
   var drawcanvas = function(ctx)
   {
+    var debugColors = ['#FF0000','#FFFF00','#00FFFF','#0000FF','#00FF00','#FF00FF'];
     ctx.fillStyle = '#000';    
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -72,25 +91,45 @@ $(document).ready(function(){
 
     ctx.translate($wrapper.width()/2,$wrapper.outerHeight()/2);
 
-    ctx.fillStyle = '#A5F2F3';
-    ctx.beginPath();
+    if(debug)
+      ctx.font = "60px Arial";
 
+    ctx.beginPath();
     ctx.moveTo(points1[0].x,points1[0].y);
 
-    curRot = 0;
 
-    for(var j=1;j<7;j++)
+    for(var j=1;j<petalAmount+1;j++)
     {
+      if(debug)
+        ctx.fillStyle = debugColors[j-1];
+
       for(var i=0;i<points1.length;i++)
+      {
+        if(debug)
+          ctx.fillText(`${j-1} ${i} {${Math.round(points1[i].x,1)};${Math.round(points1[i].y,1)}}`,points1[i].x,points1[i].y);                 
+        
         ctx.lineTo(points1[i].x,points1[i].y);
-
+      }
+      
       for(var i=0;i<points2.length;i++)
+      {
+        if(debug)
+          ctx.fillText(`#2 ${j-1} ${i} {${Math.round(points2[i].x,1)};${Math.round(points2[i].y,1)}}`,points2[i].x+30,points2[i].y+30);                 
+        
         ctx.lineTo(points2[i].x,points2[i].y);   
+      }
 
-      ctx.rotate(60*Math.PI/180);
+      ctx.rotate(360/petalAmount*Math.PI/180);
     }
 
     ctx.closePath();
+
+    if(debug)
+    {
+      ctx.strokeStyle = '#FF0000';
+      ctx.stroke();
+    }
+    ctx.fillStyle = snowFlakeColor;    
     ctx.fill();
 
     ctx.restore();
@@ -197,6 +236,51 @@ $(document).ready(function(){
   };
 
   // Install UI buttons callbacks
+
+  var setPetalsAmount = function(amount){
+    
+    if(petalAmount == amount)
+      return;
+
+    petalAmount = amount;
+    resetUI();
+  };
+
+  var resetUI = function(){
+
+    // Remove all cursors, and re-create the original 3 
+    $(".cursor").remove();
+
+    $wrapper.children("canvas").after('<div class="cursor set boundary" id="leftBoundary"></div>\
+      <div class="cursor" id="middleBoundary"></div>\
+      <div class="cursor set boundary" id="rightBoundary"></div>');    
+
+    // Adjust initial position according to the amount of petals
+    var petalAngle = 2*Math.PI/petalAmount/2; 
+
+    $('#rightBoundary').css({'left':Math.sin(petalAngle)*50+50+'%'}).addClass("set");
+    $('#rightBoundary').css({'top':50-Math.cos(petalAngle)*50+'%'});
+
+    $('#middleBoundary').css({'left':Math.sin(petalAngle/2)*30+50+'%'}).addClass("set");
+    $('#middleBoundary').css({'top':50-Math.cos(petalAngle/2)*30+'%'});
+
+    makeDraggable();
+
+    // Compensate cursor width/height
+    $(".cursor").each(function(){
+      $(this).css({left:$(this).position().left-$(this).width()/2+"px"});
+      $(this).css({top:$(this).position().top-$(this).height()/2+"px"});
+    });
+
+    // Re-draw
+    updatePointList();
+    drawcanvas(ctx);     
+  }
+
+  $("#petals_4").click(() => {setPetalsAmount(4)});
+  $("#petals_6").click(() => {setPetalsAmount(6)});
+  $("#petals_8").click(() => {setPetalsAmount(8)});
+
   $("#send").click(function(){
     
     if(sendDisabled)
@@ -205,54 +289,36 @@ $(document).ready(function(){
     updatePointList();
     drawcanvas(ctx);    
     
+    $(this).addClass('disabled');    
     sendDisabled = true;
 
     var normalizedPoints = [];
 
     for(var i=0;i<points1.length;i++)
-    {
       normalizedPoints.push({x:points1[i].x/$wrapper.width(),y:points1[i].y/$wrapper.outerHeight()});
-    }
 
-    $(this).addClass('disabled');
+    console.log(JSON.stringify({petalAmount:petalAmount,normalizedPoints:normalizedPoints}));
 
+    // Send new snowflake to the server
+    $.post(serverUrl, { 
+      type:"newSnowFlake",
+      data:JSON.stringify({petalAmount:petalAmount,points:normalizedPoints})
+    });    
+
+    // Allow sending a new one after 5 seconds
     window.setTimeout(function(){
       
       $("#send").removeClass('disabled');
       sendDisabled = false;
 
-    },5000);
-
-    console.log(JSON.stringify(normalizedPoints));
-
-    $.post(serverUrl+serverPage, { 
-      type:"newSnowFlake",
-      data:JSON.stringify(normalizedPoints)
-    });    
+    },5000);    
   });
 
-  $("#reset").click(function(){
-
-    $(".cursor").remove();
-
-    $wrapper.children("canvas").after('<div class="cursor set boundary" id="leftBoundary"></div>\
-      <div class="cursor" id="middleBoundary"></div>\
-      <div class="cursor set boundary" id="rightBoundary"></div>');
-
-    makeDraggable();
-
-    $(".cursor").each(function(){
-      $(this).css({left:$(this).position().left-$(this).width()/2+"px"});
-      $(this).css({top:$(this).position().top-$(this).height()/2+"px"});
-    });
-
-    updatePointList();
-    drawcanvas(ctx);    
-  });
+  $("#reset").click(function(){resetUI();});
 
   $("#showMyFlakes").click(function(){
 
-    $.get(serverUrl+serverPage, { 
+    $.get(serverUrl, { 
       type:"showMyFlakes",
       data:''
     });   

@@ -35,7 +35,7 @@ canvas
 
 #leftBoundary
 {
-  top:10%;
+  top:0%;
   left:50%;
 }
 
@@ -57,6 +57,16 @@ canvas
   color:gray;
 }
 
+.third-width-button
+{
+  float:left;
+  width:33.333333%;
+  text-align:center;
+  font-size:3em;
+  outline:5px solid black;
+  line-height:300%;
+}
+
 .half-width-button
 {
   float:left;
@@ -73,6 +83,6 @@ canvas
   width:100%;
   text-align:center;
   font-size:3em;
-  outline:5px solid black;
+  border-top:5px solid black;
   line-height:300%;
 }
